@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:gravity="center_horizontal"
+              android:orientation="vertical">
+
+    <Keyboard
+            android:horizontalGap="0.5%p"
+            android:keyHeight="52dp"
+            android:verticalGap="3dp">
+
+        <!-- 第一行：1 2 3 -->
+        <Row android:keyWidth="33%p">
+            <Key android:codes="49"  android:keyLabel="1&#10;,.?!"/>
+            <Key android:codes="50"  android:keyLabel="2&#10;abc"/>
+            <Key android:codes="51"  android:keyLabel="3&#10;def"/>
+        </Row>
+
+        <!-- 第二行：4 5 6 -->
+        <Row android:keyWidth="33%p">
+            <Key android:codes="52"  android:keyLabel="4&#10;ghi"/>
+            <Key android:codes="53"  android:keyLabel="5&#10;jkl"/>
+            <Key android:codes="54"  android:keyLabel="6&#10;mno"/>
+        </Row>
+
+        <!-- 第三行：7 8 9 -->
+        <Row android:keyWidth="33%p">
+            <Key android:codes="55"  android:keyLabel="7&#10;pqrs"/>
+            <Key android:codes="56"  android:keyLabel="8&#10;tuv"/>
+            <Key android:codes="57"  android:keyLabel="9&#10;wxyz"/>
+        </Row>
+
+    </Keyboard>
+</LinearLayout>

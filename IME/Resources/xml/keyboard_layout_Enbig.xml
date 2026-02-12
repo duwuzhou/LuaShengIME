@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:gravity="center_horizontal"
+              android:orientation="vertical">
+
+    <Keyboard
+            android:horizontalGap="0%p"
+            android:keyHeight="56dp"
+            android:verticalGap="5dp">
+
+        <!-- 第一行：10个键 -->
+        <Row android:keyWidth="9.9%p">
+            <!-- Q(81) W(87) E(69) R(82) T(84) Y(89) U(85) I(73) O(79) P(80) -->
+            <Key android:codes="81" android:keyLabel="Q" android:popupCharacters="1"/>
+            <Key android:codes="87" android:keyLabel="W" android:popupCharacters="2"/>
+            <Key android:codes="69" android:keyLabel="E" android:popupCharacters="3,ê,é,è"/>
+            <Key android:codes="82" android:keyLabel="R" android:popupCharacters="4"/>
+            <Key android:codes="84" android:keyLabel="T" android:popupCharacters="5"/>
+            <Key android:codes="89" android:keyLabel="Y" android:popupCharacters="6"/>
+            <Key android:codes="85" android:keyLabel="U" android:popupCharacters="7,û,ü,ǔ"/>
+            <Key android:codes="73" android:keyLabel="I" android:popupCharacters="8,ī,í,ì"/>
+            <Key android:codes="79" android:keyLabel="O" android:popupCharacters="9,ō,ó,ò"/>
+            <Key android:codes="80" android:keyLabel="P" android:popupCharacters="0"/>
+        </Row>
+
+        <!-- 第二行：9个键 -->
+        <Row android:keyWidth="9.9%p">
+            <!-- A(65) S(83) D(68) F(70) G(71) H(72) J(74) K(75) L(76) -->
+            <Key android:codes="65" android:keyLabel="A" android:popupCharacters="ā,á,ǎ,à"/>
+            <Key android:codes="83" android:keyLabel="S" android:popupCharacters="š"/>
+            <Key android:codes="68" android:keyLabel="D"/>
+            <Key android:codes="70" android:keyLabel="F"/>
+            <Key android:codes="71" android:keyLabel="G"/>
+            <Key android:codes="72" android:keyLabel="H"/>
+            <Key android:codes="74" android:keyLabel="J"/>
+            <Key android:codes="75" android:keyLabel="K"/>
+            <Key android:codes="76" android:keyLabel="L"/>
+        </Row>
+
+        <!-- 第三行：9个键（含功能键） -->
+        <Row android:keyWidth="9.8%p">
+            <!-- Shift(-1) Z(90) X(88) C(67) V(86) B(66) N(78) M(77) Delete(-5) -->
+            <Key android:codes="-1" android:keyLabel="⬆" android:keyWidth="15%p"/>
+            <Key android:codes="90" android:keyLabel="Z"/>
+            <Key android:codes="88" android:keyLabel="X"/>
+            <Key android:codes="67" android:keyLabel="C" android:popupCharacters="č,ć"/>
+            <Key android:codes="86" android:keyLabel="V"/>
+            <Key android:codes="66" android:keyLabel="B"/>
+            <Key android:codes="78" android:keyLabel="N"/>
+            <Key android:codes="77" android:keyLabel="M"/>
+            <Key android:codes="-5"  android:keyLabel="⌫" android:keyWidth="15%p"/>
+        </Row>
+
+        <!-- 第四行：7个键（功能键行） -->
+        <Row android:keyWidth="14.8%p">
+            <!-- 数字切换(-2) 符号(-6) 逗号(44) 空格(32) 句号(46) 切换语言(-4) 回车(-3) -->
+            <Key android:codes="-2" android:keyLabel="123" />
+            <Key android:codes="-6" android:keyLabel="符" />
+            <Key android:codes="44" android:keyLabel="，" android:keyWidth="10%p"/>
+            <Key android:codes="32" android:keyLabel="空格" android:keyWidth="20%p"/>
+            <Key android:codes="46" android:keyLabel="。" android:keyWidth="10%p"/>
+            <Key android:codes="-4" android:keyLabel="中/英"/>
+            <Key android:codes="-3" android:keyLabel="↵"/>
+        </Row>
+    </Keyboard>
+</LinearLayout>

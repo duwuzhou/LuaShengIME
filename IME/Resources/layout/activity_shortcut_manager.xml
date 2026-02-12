@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/spacing_lg">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/shortcut_manager_title"
+            android:textSize="@dimen/text_title"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:gravity="center"
+            android:paddingBottom="@dimen/spacing_lg" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="@dimen/spacing_lg"
+            android:layout_marginBottom="@dimen/spacing_md">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/shortcut_add_group"
+                android:textSize="@dimen/text_subtitle"
+                android:textColor="@color/text_primary"
+                android:paddingBottom="@dimen/spacing_sm" />
+
+            <EditText
+                android:id="@+id/edit_shortcut_category"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:hint="@string/shortcut_group_name_hint"
+                android:inputType="text"
+                android:background="@drawable/bg_field"
+                android:layout_marginBottom="@dimen/spacing_sm" />
+
+            <Button
+                android:id="@+id/btn_shortcut_add_category"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:text="@string/shortcut_add_group"
+                android:background="@drawable/key_function_background"
+                android:textColor="@color/key_text_secondary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="@dimen/spacing_lg"
+            android:layout_marginBottom="@dimen/spacing_md">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/shortcut_current_group"
+                android:textSize="@dimen/text_subtitle"
+                android:textColor="@color/text_primary"
+                android:paddingBottom="@dimen/spacing_sm" />
+
+            <Spinner
+                android:id="@+id/spinner_shortcut_category"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_field"
+                android:layout_marginBottom="@dimen/spacing_sm"
+                android:spinnerMode="dropdown" />
+
+            <EditText
+                android:id="@+id/edit_shortcut_rename"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:hint="@string/shortcut_new_group_name_hint"
+                android:inputType="text"
+                android:background="@drawable/bg_field"
+                android:layout_marginBottom="@dimen/spacing_sm" />
+
+            <Button
+                android:id="@+id/btn_shortcut_rename_category"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:text="@string/shortcut_rename_group"
+                android:background="@drawable/key_function_background"
+                android:textColor="@color/key_text_secondary"
+                android:layout_marginBottom="@dimen/spacing_sm" />
+
+            <Button
+                android:id="@+id/btn_shortcut_delete_category"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:text="@string/shortcut_delete_group"
+                android:background="@drawable/key_function_background"
+                android:textColor="@color/key_text_secondary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="@dimen/spacing_lg"
+            android:layout_marginBottom="@dimen/spacing_md">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/shortcut_add_phrase"
+                android:textSize="@dimen/text_subtitle"
+                android:textColor="@color/text_primary"
+                android:paddingBottom="@dimen/spacing_sm" />
+
+            <EditText
+                android:id="@+id/edit_shortcut_phrase"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:hint="@string/shortcut_phrase_text_hint"
+                android:inputType="text"
+                android:background="@drawable/bg_field"
+                android:layout_marginBottom="@dimen/spacing_sm" />
+
+            <Button
+                android:id="@+id/btn_shortcut_add_phrase"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:text="@string/shortcut_add_phrase"
+                android:background="@drawable/key_function_background"
+                android:textColor="@color/key_text_secondary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="@dimen/spacing_lg"
+            android:layout_marginBottom="@dimen/spacing_md">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/shortcut_import_export"
+                android:textSize="@dimen/text_subtitle"
+                android:textColor="@color/text_primary"
+                android:paddingBottom="@dimen/spacing_sm" />
+
+            <Button
+                android:id="@+id/btn_shortcut_import"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:text="@string/shortcut_import"
+                android:background="@drawable/key_function_background"
+                android:textColor="@color/key_text_secondary"
+                android:layout_marginBottom="@dimen/spacing_sm" />
+
+            <Button
+                android:id="@+id/btn_shortcut_export"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:text="@string/shortcut_export"
+                android:background="@drawable/key_function_background"
+                android:textColor="@color/key_text_secondary" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="@dimen/spacing_lg"
+            android:layout_marginBottom="@dimen/spacing_md">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/shortcut_phrases"
+                android:textSize="@dimen/text_subtitle"
+                android:textColor="@color/text_primary"
+                android:paddingBottom="@dimen/spacing_sm" />
+
+            <TextView
+                android:id="@+id/tv_shortcut_empty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/shortcut_empty_default"
+                android:textSize="@dimen/text_caption"
+                android:textColor="@color/text_secondary"
+                android:paddingBottom="@dimen/spacing_sm" />
+
+            <ListView
+                android:id="@+id/list_shortcut_items"
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                android:divider="@android:color/transparent"
+                android:dividerHeight="4dp"
+                android:scrollbars="vertical"
+                android:fastScrollEnabled="true" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

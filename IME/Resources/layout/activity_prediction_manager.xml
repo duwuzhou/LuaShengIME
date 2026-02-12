@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/spacing_lg">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="预测词管理"
+            android:textSize="@dimen/text_title"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:gravity="center"
+            android:paddingBottom="@dimen/spacing_lg" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="@dimen/spacing_lg"
+            android:layout_marginBottom="@dimen/spacing_md">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="添加预测词"
+                android:textSize="@dimen/text_subtitle"
+                android:textColor="@color/text_primary"
+                android:paddingBottom="@dimen/spacing_sm" />
+
+            <EditText
+                android:id="@+id/edit_prediction_prev"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:hint="前词"
+                android:inputType="text"
+                android:background="@drawable/bg_field"
+                android:layout_marginBottom="@dimen/spacing_sm" />
+
+            <EditText
+                android:id="@+id/edit_prediction_next"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:hint="预测词"
+                android:inputType="text"
+                android:background="@drawable/bg_field"
+                android:layout_marginBottom="@dimen/spacing_sm" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_prediction_add"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="添加" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="@dimen/spacing_lg"
+            android:layout_marginBottom="@dimen/spacing_md">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="导入 / 导出"
+                android:textSize="@dimen/text_subtitle"
+                android:textColor="@color/text_primary"
+                android:paddingBottom="@dimen/spacing_sm" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_prediction_import"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="导入预测词"
+                android:layout_marginBottom="@dimen/spacing_sm" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_prediction_export"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="导出预测词"
+                android:layout_marginBottom="@dimen/spacing_sm" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_prediction_import_rime"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="导入 Rime 词库"
+                android:layout_marginBottom="@dimen/spacing_sm" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_prediction_export_rime"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="导出 Rime 词库" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="@dimen/spacing_lg"
+            android:layout_marginBottom="@dimen/spacing_md">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="已配置预测词"
+                android:textSize="@dimen/text_subtitle"
+                android:textColor="@color/text_primary"
+                android:paddingBottom="@dimen/spacing_sm" />
+
+            <TextView
+                android:id="@+id/tv_prediction_empty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="暂无预测词"
+                android:textSize="@dimen/text_caption"
+                android:textColor="@color/text_secondary"
+                android:paddingBottom="@dimen/spacing_sm" />
+
+            <LinearLayout
+                android:id="@+id/list_prediction_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net8.0-android</TargetFramework>
+        <SupportedOSPlatformVersion>21</SupportedOSPlatformVersion>
+        <OutputType>Exe</OutputType>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <ApplicationId>com.companyname.IME</ApplicationId>
+        <ApplicationVersion>1</ApplicationVersion>
+        <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+        <!-- 支持 arm64-v8a ABI (Rime 库) -->
+        <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
+        <!-- 禁用代码链接以包含所有库 -->
+        <PublishTrimmed>false</PublishTrimmed>
+        <TrimMode>false</TrimMode>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <PublishTrimmed>true</PublishTrimmed>
+        <TrimMode>partial</TrimMode>
+    </PropertyGroup>
+    <ItemGroup>
+      <Compile Remove="IME\**" />
+    </ItemGroup>
+    <ItemGroup>
+      <EmbeddedResource Remove="IME\**" />
+    </ItemGroup>
+    <ItemGroup>
+      <TransformFile Remove="IME\**" />
+    </ItemGroup>
+    <ItemGroup>
+      <AndroidLibrary Remove="IME\**" />
+    </ItemGroup>
+    <ItemGroup>
+      <AndroidNativeLibrary Remove="IME\**" />
+    </ItemGroup>
+    <ItemGroup>
+      <JavaSourceJar Remove="IME\**" />
+    </ItemGroup>
+    <ItemGroup>
+      <AndroidJavaSource Remove="IME\**" />
+    </ItemGroup>
+    <ItemGroup>
+      <None Remove="IME\**" />
+    </ItemGroup>
+    <ItemGroup>
+      <AndroidResource Remove="Resources\layout\candidate_view.xml" />
+    </ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="GoogleGson" Version="2.11.0.5" />
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+      <PackageReference Include="Xamarin.AndroidX.AppCompat" Version="1.7.1" />
+      <PackageReference Include="Xamarin.AndroidX.Core" Version="1.16.0.2" />
+      <PackageReference Include="Xamarin.Google.Android.Material" Version="1.11.0.3" />
+    </ItemGroup>
+    <ItemGroup>
+      <!-- JNI 库 (arm64-v8a) - C++ 运行时和 Rime -->
+      <AndroidNativeLibrary Include="libs\arm64-v8a\libc++_shared.so">
+        <Abi>arm64-v8a</Abi>
+        <Link>lib\arm64-v8a\libc++_shared.so</Link>
+      </AndroidNativeLibrary>
+      <AndroidNativeLibrary Include="libs\arm64-v8a\librime.so">
+        <Abi>arm64-v8a</Abi>
+        <Link>lib\arm64-v8a\librime.so</Link>
+      </AndroidNativeLibrary>
+    </ItemGroup>
+</Project>

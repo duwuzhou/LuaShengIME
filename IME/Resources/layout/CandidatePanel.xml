@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/candidatePanelRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/keyboard_background">
+
+    <LinearLayout
+        android:id="@+id/panelHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/spacing_md"
+        android:paddingVertical="@dimen/spacing_sm"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/panelTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="候选词"
+            android:textSize="@dimen/text_body"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary" />
+
+        <Button
+            android:id="@+id/btnPanelClose"
+            android:layout_width="64dp"
+            android:layout_height="32dp"
+            android:text="关闭"
+            android:textSize="@dimen/text_caption"
+            android:textColor="@color/key_text_secondary"
+            android:background="@drawable/key_function_background" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/panelPreviewContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/spacing_md"
+        android:paddingVertical="@dimen/spacing_xs"
+        android:background="@color/surface_alt">
+
+        <TextView
+            android:id="@+id/panelInputPreviewText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="@dimen/text_body"
+            android:textColor="@color/input_pinyin"
+            android:textStyle="italic" />
+
+        <TextView
+            android:id="@+id/panelCandidatePreviewText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="end"
+            android:textSize="@dimen/text_body"
+            android:textColor="@color/input_pinyin"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <ScrollView
+        android:id="@+id/panelScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="never">
+
+        <LinearLayout
+            android:id="@+id/panelListContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/spacing_md"
+            android:paddingBottom="@dimen/spacing_md" />
+
+    </ScrollView>
+
+</LinearLayout>

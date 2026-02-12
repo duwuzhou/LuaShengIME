@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:gravity="center_horizontal"
+              android:orientation="vertical">
+
+    <Keyboard
+            android:horizontalGap="0.5%p"
+            android:keyHeight="56dp"
+            android:verticalGap="5dp">
+
+        <!-- 第一行：10个键（中文标点） -->
+        <Row android:keyWidth="9.9%p">
+            <Key android:codes="12290" android:keyLabel="。"/>
+            <Key android:codes="65292" android:keyLabel="，"/>
+            <Key android:codes="12289" android:keyLabel="、"/>
+            <Key android:codes="65311" android:keyLabel="？"/>
+            <Key android:codes="65281" android:keyLabel="！"/>
+            <Key android:codes="65306" android:keyLabel="："/>
+            <Key android:codes="65307" android:keyLabel="；"/>
+            <Key android:codes="8220" android:keyLabel="&#x201C;"/>
+            <Key android:codes="8221" android:keyLabel="&#x201D;"/>
+            <Key android:codes="8216" android:keyLabel="&#x2018;"/>
+        </Row>
+
+        <!-- 第二行：10个键（括号及特殊符号） -->
+        <Row android:keyWidth="9.9%p">
+            <Key android:codes="8217" android:keyLabel="&#x2019;"/>
+            <Key android:codes="12304" android:keyLabel="【"/>
+            <Key android:codes="12305" android:keyLabel="】"/>
+            <Key android:codes="12298" android:keyLabel="《"/>
+            <Key android:codes="12299" android:keyLabel="》"/>
+            <Key android:codes="65288" android:keyLabel="（"/>
+            <Key android:codes="65289" android:keyLabel="）"/>
+            <Key android:codes="12300" android:keyLabel="「"/>
+            <Key android:codes="12301" android:keyLabel="」"/>
+            <Key android:codes="12302" android:keyLabel="『"/>
+        </Row>
+
+        <!-- 第三行：10个键（更多符号） -->
+        <Row android:keyWidth="9.9%p">
+            <Key android:codes="12303" android:keyLabel="』"/>
+            <Key android:codes="8230" android:keyLabel="…"/>
+            <Key android:codes="8212" android:keyLabel="—"/>
+            <Key android:codes="12316" android:keyLabel="～"/>
+            <Key android:codes="183" android:keyLabel="·"/>
+            <Key android:codes="12539" android:keyLabel="・"/>
+            <Key android:codes="65509" android:keyLabel="￥"/>
+            <Key android:codes="9734" android:keyLabel="☆"/>
+            <Key android:codes="9733" android:keyLabel="★"/>
+            <Key android:codes="9829" android:keyLabel="♥"/>
+        </Row>
+
+        <!-- 第四行：4个键（功能键行） -->
+        <Row android:keyWidth="20%p">
+            <Key android:codes="-7" android:keyLabel="ABC"/>
+            <Key android:codes="-6" android:keyLabel="EN"/>
+            <Key android:codes="32" android:keyLabel="空格" android:keyWidth="40%p"/>
+            <Key android:codes="-3" android:keyLabel="↵"/>
+        </Row>
+    </Keyboard>
+</LinearLayout>

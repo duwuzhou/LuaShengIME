@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:gravity="center_horizontal"
+              android:orientation="vertical">
+
+    <Keyboard
+            android:horizontalGap="1%p"
+            android:keyHeight="80dp"
+            android:verticalGap="5dp">
+
+        <!-- 键盘布局选择 -->
+        <Row android:keyWidth="48%p">
+            <Key android:codes="-9"  android:keyLabel="全键盘 QWERTY"/>
+            <Key android:codes="-8"  android:keyLabel="九宫格 T9"/>
+        </Row>
+    </Keyboard>
+</LinearLayout>

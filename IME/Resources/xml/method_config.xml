@@ -1,0 +1,9 @@
+<input-method xmlns:android="http://schemas.android.com/apk/res/android"
+              android:imeOptions="actionSend|flagNoFullscreen"
+              android:imeActionLabel="@string/send_action_label"
+              android:settingsActivity="IME.Features.Settings.SettingsActivity">
+    
+    <subtype
+            android:imeSubtypeLocale="zh_CN"
+            android:imeSubtypeMode="keyboard" />
+</input-method>

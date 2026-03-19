@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using Android.Content;
 using Android.Graphics;
+using Android.Text;
 using Android.Util;
 using Android.Views;
 using Android.Widget;
@@ -29,6 +30,11 @@ public sealed class T9KeyboardView : LinearLayout
     private const int SwitchNumberCode = -2;
     private const int SpaceKeyCode = 32;
     private const int SwitchLanguageCode = -4;
+    private const float LeftColumnWeightDefault = 0.10f;
+    private const float LeftColumnWeightPinyin = 0.10f;
+    private const float RightColumnWeight = 0.18f;
+    private const float CenterColumnWeightDefault = 0.72f;
+    private const float CenterColumnWeightPinyin = 0.72f;
 
     private static readonly QuickSymbolEntry[] DefaultSymbols =
     {
@@ -126,6 +132,7 @@ public sealed class T9KeyboardView : LinearLayout
         BuildLeftSymbolColumn();
         BuildCenterColumn();
         BuildRightColumn();
+        UpdateColumnWeights(pinyinMode: false);
 
         AddView(_mainSection);
 
@@ -139,7 +146,7 @@ public sealed class T9KeyboardView : LinearLayout
     {
         _symbolScroll = new ScrollView(Context)
         {
-            LayoutParameters = new LayoutParams(0, ViewGroup.LayoutParams.MatchParent, 0.10f),
+            LayoutParameters = new LayoutParams(0, ViewGroup.LayoutParams.MatchParent, LeftColumnWeightDefault),
             VerticalScrollBarEnabled = false,
             FillViewport = true
         };
@@ -249,7 +256,7 @@ public sealed class T9KeyboardView : LinearLayout
         }
 
         _centerKeyboard.LayoutParameters = new LayoutParams(
-            0, ViewGroup.LayoutParams.MatchParent, 0.72f);
+            0, ViewGroup.LayoutParams.MatchParent, CenterColumnWeightDefault);
         _mainSection!.AddView(_centerKeyboard);
     }
 
@@ -260,7 +267,7 @@ public sealed class T9KeyboardView : LinearLayout
         _rightColumn = new LinearLayout(Context)
         {
             Orientation = Orientation.Vertical,
-            LayoutParameters = new LayoutParams(0, ViewGroup.LayoutParams.MatchParent, 0.18f)
+            LayoutParameters = new LayoutParams(0, ViewGroup.LayoutParams.MatchParent, RightColumnWeight)
         };
 
         // 删除按钮（上半）
@@ -532,6 +539,7 @@ public sealed class T9KeyboardView : LinearLayout
         if (_symbolContainer == null) return;
 
         _isPinyinMode = true;
+        UpdateColumnWeights(pinyinMode: true);
         _symbolContainer.RemoveAllViews();
 
         // 最多显示 8 个结果（频率排序后最常用的在前）
@@ -547,6 +555,7 @@ public sealed class T9KeyboardView : LinearLayout
         if (!_isPinyinMode || _symbolContainer == null) return;
 
         _isPinyinMode = false;
+        UpdateColumnWeights(pinyinMode: false);
         _symbolContainer.RemoveAllViews();
 
         if (_cachedSymbolEntries != null)
@@ -571,9 +580,11 @@ public sealed class T9KeyboardView : LinearLayout
         button.SetAllCaps(false);
         button.SetBackgroundResource(Resource.Drawable.key_background);
         button.SetTextColor(new Color(ContextCompat.GetColor(Context, Resource.Color.key_text)));
-        button.SetTextSize(ComplexUnitType.Sp, 13f);
+        button.SetTextSize(ComplexUnitType.Sp, 12f);
         button.SetPadding(0, 0, 0, 0);
         button.SetIncludeFontPadding(false);
+        button.SetSingleLine(true);
+        button.Ellipsize = TextUtils.TruncateAt.End;
 
         int rowHeight = DpToPx(42);
         button.LayoutParameters = new LinearLayout.LayoutParams(
@@ -586,6 +597,30 @@ public sealed class T9KeyboardView : LinearLayout
         };
 
         _symbolContainer?.AddView(button);
+    }
+
+    private void UpdateColumnWeights(bool pinyinMode)
+    {
+        float leftWeight = pinyinMode ? LeftColumnWeightPinyin : LeftColumnWeightDefault;
+        float centerWeight = pinyinMode ? CenterColumnWeightPinyin : CenterColumnWeightDefault;
+
+        if (_symbolScroll?.LayoutParameters is LayoutParams symbolParams)
+        {
+            symbolParams.Width = 0;
+            symbolParams.Weight = leftWeight;
+            _symbolScroll.LayoutParameters = symbolParams;
+            _symbolScroll.RequestLayout();
+        }
+
+        if (_centerKeyboard?.LayoutParameters is LayoutParams centerParams)
+        {
+            centerParams.Width = 0;
+            centerParams.Weight = centerWeight;
+            _centerKeyboard.LayoutParameters = centerParams;
+            _centerKeyboard.RequestLayout();
+        }
+
+        _mainSection?.RequestLayout();
     }
 
     private int DpToPx(float dp)

@@ -88,9 +88,10 @@ namespace IME.Shared.InputEngine
                 IME.Features.UserLexicon.RimeUserLexiconStore.EnsureSchemaPatch(context);
 
                 // 从 Assets 复制 Rime 数据文件到 shared 目录（首次运行或更新时）
-                CopyRimeAssetsIfNeeded(context);
+                bool assetsChanged = CopyRimeAssetsIfNeeded(context);
                 InitializeOpenccSimplifier();
                 bool pageSizeChanged = EnsureRimePageSize(context);
+                bool interruptedDeploy = EnsureCleanBuildIfPreviousDeployCrashed();
 
                 // 创建 RimeTraits 并设置数据目录
                 IntPtr traitsPtr = RimeTraitsHelper.CreateTraits(_sharedDataDir, _userDataDir);
@@ -114,46 +115,56 @@ namespace IME.Shared.InputEngine
                     RimeTraitsHelper.FreeTraits(traitsPtr);
                 }
 
-                // 强制执行 Rime 部署（首次运行需要编译方案）
-                Log.Info(Tag, "开始 Rime 部署...");
-                bool startResult = RimeNativeBindings.StartMaintenance(true);
-                Log.Info(Tag, $"StartMaintenance 返回: {startResult}");
+                bool shouldDeploy = ShouldRunDeployment(context, assetsChanged, pageSizeChanged, interruptedDeploy);
+                bool deployCompleted = !shouldDeploy;
 
-                if (RimeNativeBindings.IsMaintenanceMode())
+                if (shouldDeploy)
                 {
-                    Log.Info(Tag, "执行 Rime 部署...");
-                    EnsureCleanBuildIfPreviousDeployCrashed();
+                    Log.Info(Tag, "检测到需要重新部署 Rime，开始维护流程...");
                     if (pageSizeChanged)
                     {
                         TryCleanUserBuild();
                     }
-                    string deployMarker = GetDeployMarkerPath();
-                    try
-                    {
-                        File.WriteAllText(deployMarker, DateTime.UtcNow.ToString("O"), new UTF8Encoding(false));
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Warn(Tag, $"写入部署标记失败: {ex.Message}");
-                    }
 
-                    bool deployResult = RimeNativeBindings.Deploy();
-                    Log.Info(Tag, $"Deploy 返回: {deployResult}");
-                    RimeNativeBindings.JoinMaintenanceThread();
-                    try
+                    bool startResult = RimeNativeBindings.StartMaintenance(true);
+                    Log.Info(Tag, $"StartMaintenance 返回: {startResult}");
+
+                    if (RimeNativeBindings.IsMaintenanceMode())
                     {
-                        if (File.Exists(deployMarker))
-                            File.Delete(deployMarker);
+                        Log.Info(Tag, "执行 Rime 部署...");
+                        string deployMarker = GetDeployMarkerPath();
+                        try
+                        {
+                            File.WriteAllText(deployMarker, DateTime.UtcNow.ToString("O"), new UTF8Encoding(false));
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Warn(Tag, $"写入部署标记失败: {ex.Message}");
+                        }
+
+                        bool deployResult = false;
+                        try
+                        {
+                            deployResult = RimeNativeBindings.Deploy();
+                            Log.Info(Tag, $"Deploy 返回: {deployResult}");
+                            RimeNativeBindings.JoinMaintenanceThread();
+                            deployCompleted = deployResult;
+                        }
+                        finally
+                        {
+                            ClearDeployMarkerIfExists();
+                        }
+
+                        Log.Info(Tag, deployCompleted ? "Rime 部署完成" : "Rime 部署未成功完成");
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        Log.Warn(Tag, $"清理部署标记失败: {ex.Message}");
+                        Log.Warn(Tag, "需要部署，但 Rime 未进入维护模式，将继续尝试创建会话");
                     }
-                    Log.Info(Tag, "Rime 部署完成");
                 }
                 else
                 {
-                    Log.Info(Tag, "Rime 不在维护模式，跳过部署");
+                    Log.Info(Tag, "Rime 部署状态有效，跳过本次部署");
                 }
 
                 // 创建会话
@@ -166,13 +177,20 @@ namespace IME.Shared.InputEngine
                 Log.Info(Tag, $"创建 Rime 会话成功: {_sessionId}");
 
                 // 选择输入方案（luna_pinyin 是默认的拼音方案）
+                bool schemaSelected = true;
                 if (!RimeNativeBindings.SelectSchema(_sessionId, "luna_pinyin"))
                 {
                     Log.Warn(Tag, "选择 luna_pinyin 方案失败，尝试 cangjie5");
                     if (!RimeNativeBindings.SelectSchema(_sessionId, "cangjie5"))
                     {
                         Log.Error(Tag, "没有可用的输入方案");
+                        schemaSelected = false;
                     }
+                }
+
+                if (schemaSelected && deployCompleted)
+                {
+                    WriteDeployState(context);
                 }
 
                 _initialized = true;
@@ -191,7 +209,7 @@ namespace IME.Shared.InputEngine
         /// <summary>
         /// 从 Assets 复制 Rime 数据文件到共享数据目录
         /// </summary>
-        private void CopyRimeAssetsIfNeeded(Context context)
+        private bool CopyRimeAssetsIfNeeded(Context context)
         {
             try
             {
@@ -215,7 +233,7 @@ namespace IME.Shared.InputEngine
                         else
                         {
                             Log.Info(Tag, "Rime 数据文件已是最新，跳过复制");
-                            return;
+                            return false;
                         }
                     }
                 }
@@ -231,10 +249,12 @@ namespace IME.Shared.InputEngine
                     File.WriteAllText(versionFile, currentVersion, new UTF8Encoding(false));
                 }
                 Log.Info(Tag, "Rime 数据文件复制完成");
+                return true;
             }
             catch (System.Exception ex)
             {
                 Log.Error(Tag, $"复制 Rime 数据文件失败: {ex.Message}");
+                return false;
             }
         }
 
@@ -363,12 +383,137 @@ namespace IME.Shared.InputEngine
             }
         }
 
+        private bool HasCompiledBuildArtifacts()
+        {
+            try
+            {
+                string buildDir = Path.Combine(_userDataDir, "build");
+                if (!Directory.Exists(buildDir))
+                {
+                    return false;
+                }
+
+                foreach (string _ in Directory.EnumerateFileSystemEntries(buildDir, "*", SearchOption.AllDirectories))
+                {
+                    return true;
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(Tag, $"检查 build 产物失败: {ex.Message}");
+                return false;
+            }
+        }
+
         private string GetDeployMarkerPath()
         {
             return Path.Combine(_userDataDir, ".deploying");
         }
 
-        private void EnsureCleanBuildIfPreviousDeployCrashed()
+        private string GetDeployStatePath()
+        {
+            return Path.Combine(_userDataDir, ".deploy_state");
+        }
+
+        private string BuildDeployState(Context context)
+        {
+            int pageSize = 0;
+            try
+            {
+                pageSize = IME.Features.Settings.SettingsActivity.GetCandidatePageSize(context);
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(Tag, $"读取候选分页设置失败: {ex.Message}");
+            }
+
+            return $"version={GetAppVersionName(context)}\npage_size={pageSize}\n";
+        }
+
+        private bool ShouldRunDeployment(Context context, bool assetsChanged, bool pageSizeChanged, bool interruptedDeploy)
+        {
+            if (assetsChanged)
+            {
+                Log.Info(Tag, "Rime 资源已更新，需要重新部署");
+                return true;
+            }
+
+            if (pageSizeChanged)
+            {
+                Log.Info(Tag, "候选分页设置已变更，需要重新部署");
+                return true;
+            }
+
+            if (interruptedDeploy)
+            {
+                Log.Warn(Tag, "检测到上次部署中断，需要重新部署");
+                return true;
+            }
+
+            if (!HasCompiledBuildArtifacts())
+            {
+                Log.Warn(Tag, "缺少编译后的 Rime build 产物，需要重新部署");
+                return true;
+            }
+
+            string deployStatePath = GetDeployStatePath();
+            if (!File.Exists(deployStatePath))
+            {
+                Log.Info(Tag, "缺少部署状态文件，需要重新部署");
+                return true;
+            }
+
+            try
+            {
+                string savedState = File.ReadAllText(deployStatePath, Encoding.UTF8);
+                string currentState = BuildDeployState(context);
+                if (!string.Equals(savedState, currentState, StringComparison.Ordinal))
+                {
+                    Log.Info(Tag, "部署状态已变化，需要重新部署");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(Tag, $"读取部署状态失败，将重新部署: {ex.Message}");
+                return true;
+            }
+
+            return false;
+        }
+
+        private void WriteDeployState(Context context)
+        {
+            try
+            {
+                File.WriteAllText(GetDeployStatePath(), BuildDeployState(context), new UTF8Encoding(false));
+                Log.Info(Tag, "已写入 Rime 部署状态");
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(Tag, $"写入部署状态失败: {ex.Message}");
+            }
+        }
+
+        private void ClearDeployMarkerIfExists()
+        {
+            try
+            {
+                string marker = GetDeployMarkerPath();
+                if (File.Exists(marker))
+                {
+                    File.Delete(marker);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn(Tag, $"清理部署标记失败: {ex.Message}");
+            }
+        }
+
+        private bool EnsureCleanBuildIfPreviousDeployCrashed()
         {
             try
             {
@@ -378,12 +523,15 @@ namespace IME.Shared.InputEngine
                     Log.Warn(Tag, "检测到上次部署异常中断，清理 user/build 后重新部署");
                     TryCleanUserBuild();
                     File.Delete(marker);
+                    return true;
                 }
             }
             catch (Exception ex)
             {
                 Log.Warn(Tag, $"检查部署标记失败: {ex.Message}");
             }
+
+            return false;
         }
 
         private string ApplySimplificationIfNeeded(string text)
@@ -521,6 +669,13 @@ namespace IME.Shared.InputEngine
                     {
                         bool result = RimeNativeBindings.ProcessKey(_sessionId, rimeKeyCode, MOD_NONE);
                         Log.Info(Tag, $"RimeNativeBindings.ProcessKey 返回: {result}");
+                        if (!result && ShouldUseSimulatedKeySequence(rimeKeyCode))
+                        {
+                            string sequence = char.ToString((char)rimeKeyCode);
+                            result = RimeNativeBindings.SimulateKeySequence(_sessionId, sequence);
+                            Log.Info(Tag, $"SimulateKeySequence('{sequence}') 杩斿洖: {result}");
+                        }
+
                         return result;
                     }
                     else
@@ -536,6 +691,13 @@ namespace IME.Shared.InputEngine
                 Log.Error(Tag, $"处理按键失败: {ex.Message}");
                 return false;
             }
+        }
+
+        private static bool ShouldUseSimulatedKeySequence(int rimeKeyCode)
+        {
+            return (rimeKeyCode >= 'a' && rimeKeyCode <= 'z')
+                   || (rimeKeyCode >= 'A' && rimeKeyCode <= 'Z')
+                   || rimeKeyCode == '\'';
         }
 
         public string GetComposingText()

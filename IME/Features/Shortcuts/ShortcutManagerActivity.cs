@@ -9,15 +9,30 @@ using Android.OS;
 using Android.Views;
 using Android.Widget;
 using AndroidUri = Android.Net.Uri;
+using IME.Features.Settings;
 using IME.Shared.Data;
+using IME.Shared.ResourceProtection;
+using IME.Shared.Security;
 
 namespace IME.Features.Shortcuts;
 
 [Activity(Label = "@string/shortcut_manager_title", Theme = "@style/MyNoActionBarTheme")]
-public class ShortcutManagerActivity : Activity
+public class ShortcutManagerActivity : SecurityMonitoredActivity
 {
     private const int RequestImport = 2301;
     private const int RequestExport = 2302;
+
+    protected override void OnResume()
+    {
+        base.OnResume();
+        KamiVipVerificationCoordinator.Start(this, nameof(ShortcutManagerActivity));
+    }
+
+    protected override void OnPause()
+    {
+        KamiVipVerificationCoordinator.Stop();
+        base.OnPause();
+    }
 
     private Spinner _spinnerCategory;
     private EditText _editCategory;
@@ -43,7 +58,23 @@ public class ShortcutManagerActivity : Activity
     protected override void OnCreate(Bundle savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
+        if (!EnsureSecurityAllowedNow())
+        {
+            return;
+        }
+
+        if (!KamiVipConfig.CanUseCustomShortcuts(this))
+        {
+            Toast.MakeText(this, KamiVipConfig.CustomShortcutRestrictedMessage, ToastLength.Short)?.Show();
+            Finish();
+            return;
+        }
+
+#if DEBUG
         SetContentView(Resource.Layout.activity_shortcut_manager);
+#else
+        SetContentView(EncryptedLayout.Inflate(this, "layout/activity_shortcut_manager", Resource.Layout.activity_shortcut_manager));
+#endif
 
         _dbHelper = new SwordDBHelper(this);
 

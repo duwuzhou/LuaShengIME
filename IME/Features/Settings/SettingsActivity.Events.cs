@@ -260,6 +260,12 @@ namespace IME.Features.Settings
 
             _btnImportLexicon.Click += (sender, e) =>
             {
+                if (!KamiVipConfig.CanImportUserLexicon(this))
+                {
+                    ShowToast(KamiVipConfig.UserLexiconImportRestrictedMessage);
+                    return;
+                }
+
                 var intent = new Intent(Intent.ActionOpenDocument);
                 intent.AddCategory(Intent.CategoryOpenable);
                 intent.SetType("text/plain");
@@ -278,15 +284,28 @@ namespace IME.Features.Settings
 
             _btnPredictionManage.Click += (sender, e) =>
             {
+                if (!KamiVipConfig.CanUseCustomPrediction(this))
+                {
+                    ShowToast(KamiVipConfig.CustomPredictionRestrictedMessage);
+                    return;
+                }
+
                 var intent = new Intent(this, typeof(IME.Features.Prediction.PredictionManagerActivity));
                 StartActivity(intent);
             };
 
             _btnShortcutManage.Click += (sender, e) =>
             {
+                if (!KamiVipConfig.CanUseCustomShortcuts(this))
+                {
+                    ShowToast(KamiVipConfig.CustomShortcutRestrictedMessage);
+                    return;
+                }
+
                 var intent = new Intent(this, typeof(ShortcutManagerActivity));
                 StartActivity(intent);
             };
+
         }
 
         protected override async void OnActivityResult(int requestCode, Result resultCode, Intent data)
@@ -312,6 +331,12 @@ namespace IME.Features.Settings
 
         private async Task ImportLexiconAsync(AndroidUri uri)
         {
+            if (!KamiVipConfig.CanImportUserLexicon(this))
+            {
+                ShowToast(KamiVipConfig.UserLexiconImportRestrictedMessage);
+                return;
+            }
+
             if (_lexiconService == null)
             {
                 ShowToast("词库服务不可用");

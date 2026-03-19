@@ -38,9 +38,18 @@ public partial class Candidate
             return;
         }
 
+        if (_keyboardHandler?.IsT9Mode == true && !(_keyboardHandler?.GetAsciiMode() ?? false))
+        {
+            return;
+        }
+
         if (!_isPinyinEditing)
         {
             EnterPinyinEditMode();
+            if (!_isPinyinEditing)
+            {
+                return;
+            }
         }
 
         MoveCursorByTouchX(_lastInputPreviewTouchX);
@@ -57,6 +66,12 @@ public partial class Candidate
     {
         if (!_isPinyinEditing)
         {
+            return false;
+        }
+
+        if (_keyboardHandler?.IsT9Mode == true && !(_keyboardHandler?.GetAsciiMode() ?? false))
+        {
+            ExitPinyinEditMode();
             return false;
         }
 
@@ -112,8 +127,14 @@ public partial class Candidate
 
     private void EnterPinyinEditMode()
     {
+        string normalized = NormalizeEditablePinyin(_inputPreviewRawText);
+        if (normalized.Length == 0)
+        {
+            return;
+        }
+
         _isPinyinEditing = true;
-        _editablePinyin = NormalizeEditablePinyin(_inputPreviewRawText);
+        _editablePinyin = normalized;
         _editCursorIndex = _editablePinyin.Length;
         StartCursorBlink();
         RenderInputPreviewText();
@@ -192,6 +213,7 @@ public partial class Candidate
         if (_editablePinyin.Length == 0)
         {
             ExitPinyinEditMode();
+            _keyboardHandler?.ClearCandidates();
             return;
         }
 
@@ -200,6 +222,7 @@ public partial class Candidate
             _inputEngine.ProcessKey(_editablePinyin[i]);
         }
 
+        _keyboardHandler?.UpdateChineseCandidates();
         RenderInputPreviewText();
     }
 
@@ -286,7 +309,7 @@ public partial class Candidate
 
         _inputPreviewText.SetTextColor(new Color(ContextCompat.GetColor(Context, Resource.Color.input_pinyin)));
         _inputPreviewText.SetTypeface(Typeface.Default, TypefaceStyle.Italic);
-        _candidatePreviewText.Visibility = _previewEnabled ? ViewStates.Visible : ViewStates.Gone;
+        ApplyCandidatePreviewVisibility();
     }
 
     private void StartCursorBlink()

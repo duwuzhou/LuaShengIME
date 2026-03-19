@@ -5,9 +5,11 @@
         <OutputType>Exe</OutputType>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
-        <ApplicationId>com.companyname.IME</ApplicationId>
+        <ApplicationId>com.hualuo.luanshenIME</ApplicationId>
         <ApplicationVersion>1</ApplicationVersion>
         <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+        <EncryptedResourceKeyBase64>atyCC4YDPTNpyHWVcvTtT2WGJbuI2bNIPIc1vHn3+pU=</EncryptedResourceKeyBase64>
+        <ObfuscarExe>obfuscar</ObfuscarExe>
         <!-- 支持 arm64-v8a ABI (Rime 库) -->
         <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
         <!-- 禁用代码链接以包含所有库 -->
@@ -17,6 +19,7 @@
     <PropertyGroup Condition="'$(Configuration)' == 'Release'">
         <PublishTrimmed>true</PublishTrimmed>
         <TrimMode>partial</TrimMode>
+        <RunObfuscator>false</RunObfuscator>
     </PropertyGroup>
     <ItemGroup>
       <Compile Remove="IME\**" />
@@ -48,6 +51,10 @@
     <ItemGroup>
       <PackageReference Include="GoogleGson" Version="2.11.0.5" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+      <PackageReference Include="Obfuscar" Version="3.0.0-beta.4">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
       <PackageReference Include="Xamarin.AndroidX.AppCompat" Version="1.7.1" />
       <PackageReference Include="Xamarin.AndroidX.Core" Version="1.16.0.2" />
       <PackageReference Include="Xamarin.Google.Android.Material" Version="1.11.0.3" />
@@ -63,4 +70,22 @@
         <Link>lib\arm64-v8a\librime.so</Link>
       </AndroidNativeLibrary>
     </ItemGroup>
+    <Target Name="GenerateEncryptedResourceConfig" BeforeTargets="CoreCompile" Condition="'$(EncryptedResourceKeyBase64)' != ''">
+        <PropertyGroup>
+            <EncryptedResourceConfigFile>$(IntermediateOutputPath)EncryptedResourceConfig.g.cs</EncryptedResourceConfigFile>
+        </PropertyGroup>
+        <Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(ProjectDir)tools\GenerateEncryptedResourceConfig.ps1&quot; -OutFile &quot;$(EncryptedResourceConfigFile)&quot; -KeyBase64 &quot;$(EncryptedResourceKeyBase64)&quot;" />
+        <ItemGroup>
+            <Compile Include="$(EncryptedResourceConfigFile)" />
+        </ItemGroup>
+    </Target>
+    <Target Name="EncryptLayoutResources" BeforeTargets="Build" Condition="'$(Configuration)' == 'Release'">
+        <Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(ProjectDir)tools\EncryptResources.ps1&quot; -ProjectDir &quot;$(MSBuildProjectDirectory)&quot; -Configuration $(Configuration) -KeyBase64 &quot;$(EncryptedResourceKeyBase64)&quot;" />
+        <ItemGroup>
+            <AndroidAsset Include="$(ProjectDir)Assets\enc\**\*.enc" />
+        </ItemGroup>
+    </Target>
+    <Target Name="ObfuscateAssemblies" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' and '$(RunObfuscator)' == 'true'">
+        <Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(ProjectDir)tools\obfuscate.ps1&quot; -ProjectDir &quot;$(MSBuildProjectDirectory)&quot; -Configuration $(Configuration) -ObfuscarExe &quot;$(ObfuscarExe)&quot; -ReplaceOutput" />
+    </Target>
 </Project>

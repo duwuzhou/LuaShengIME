@@ -12,18 +12,33 @@ using Android.Util;
 using Android.Views;
 using Android.Widget;
 using IME.Features.UserLexicon;
+using IME.Features.Settings;
+using IME.Shared.ResourceProtection;
 using IME.Shared.InputEngine;
+using IME.Shared.Security;
 
 namespace IME.Features.Prediction;
 
 [Activity(Label = "预测词管理", Theme = "@style/MyNoActionBarTheme")]
-public class PredictionManagerActivity : Activity
+public class PredictionManagerActivity : SecurityMonitoredActivity
 {
     private const string Tag = "PredictionManager";
     private const int RequestImport = 2201;
     private const int RequestExport = 2202;
     private const int RequestExportRime = 2203;
     private const int RequestImportRime = 2204;
+
+    protected override void OnResume()
+    {
+        base.OnResume();
+        KamiVipVerificationCoordinator.Start(this, nameof(PredictionManagerActivity));
+    }
+
+    protected override void OnPause()
+    {
+        KamiVipVerificationCoordinator.Stop();
+        base.OnPause();
+    }
 
     private EditText _editPrev;
     private EditText _editNext;
@@ -40,7 +55,23 @@ public class PredictionManagerActivity : Activity
     protected override void OnCreate(Bundle savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
+        if (!EnsureSecurityAllowedNow())
+        {
+            return;
+        }
+
+        if (!KamiVipConfig.CanUseCustomPrediction(this))
+        {
+            Toast.MakeText(this, KamiVipConfig.CustomPredictionRestrictedMessage, ToastLength.Short)?.Show();
+            Finish();
+            return;
+        }
+
+#if DEBUG
         SetContentView(Resource.Layout.activity_prediction_manager);
+#else
+        SetContentView(EncryptedLayout.Inflate(this, "layout/activity_prediction_manager", Resource.Layout.activity_prediction_manager));
+#endif
 
         _store = new CustomPredictionStore(this);
 

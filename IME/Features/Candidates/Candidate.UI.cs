@@ -37,19 +37,16 @@ namespace IME.Features.Candidates
             {
                 _inputPreviewContainer.Visibility = (hasInput || hasPreview) ? ViewStates.Visible : ViewStates.Gone;
                 _candidateRow.Visibility = hasCandidates ? ViewStates.Visible : ViewStates.Invisible;
-                _functionButtonsContainer.Visibility = ViewStates.Gone;
             }
             else
             {
-                ShowFunctionButtons();
+                _inputPreviewContainer.Visibility = ViewStates.Invisible;
+                _candidateRow.Visibility = ViewStates.Invisible;
             }
-        }
 
-        private void ShowFunctionButtons()
-        {
-            _inputPreviewContainer.Visibility = ViewStates.Invisible;
-            _candidateRow.Visibility = ViewStates.Invisible;
             _functionButtonsContainer.Visibility = ViewStates.Visible;
+
+            ApplyCandidatePreviewVisibility();
         }
 
         private void OnSwitchButton1Click(object sender, EventArgs e)
@@ -61,6 +58,7 @@ namespace IME.Features.Candidates
 
         private void OnSwitchButton2Click(object sender, EventArgs e)
         {
+            _keyboardHandler?.ShowFunctionHome();
             _keyboardHandler?.SwitchViewgn(GnType.gn1);
             OnFunctionClick?.Invoke(this, e);
         }
@@ -103,6 +101,7 @@ namespace IME.Features.Candidates
                 }
             }
 
+            ApplyCandidatePreviewVisibility();
             UpdatePinyinEditVisualState();
         }
 
@@ -120,6 +119,44 @@ namespace IME.Features.Candidates
             }
 
             _candidatePreviewText.Text = nextText;
+            ApplyCandidatePreviewVisibility();
+        }
+
+        private bool ShouldPrioritizeT9InputPreview()
+        {
+            if (_keyboardHandler == null)
+            {
+                return false;
+            }
+
+            if (!_keyboardHandler.IsT9Mode || _keyboardHandler.GetAsciiMode())
+            {
+                return false;
+            }
+
+            return !_isPinyinEditing && !string.IsNullOrEmpty(_inputPreviewText?.Text);
+        }
+
+        private void ApplyCandidatePreviewVisibility()
+        {
+            if (_candidatePreviewText == null)
+            {
+                return;
+            }
+
+            if (_isPinyinEditing)
+            {
+                _candidatePreviewText.Visibility = ViewStates.Gone;
+                return;
+            }
+
+            if (ShouldPrioritizeT9InputPreview())
+            {
+                _candidatePreviewText.Visibility = ViewStates.Gone;
+                return;
+            }
+
+            _candidatePreviewText.Visibility = _previewEnabled ? ViewStates.Visible : ViewStates.Gone;
         }
     }
 }

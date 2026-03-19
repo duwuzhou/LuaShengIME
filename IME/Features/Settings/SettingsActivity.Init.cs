@@ -36,6 +36,8 @@ namespace IME.Features.Settings
             _editTapFallbackMoveSlopDp = FindViewById<EditText>(Resource.Id.edit_tap_fallback_move_slop_dp);
             _btnResetTapFallback = FindViewById<Button>(Resource.Id.btn_reset_tap_fallback);
 
+            EnsureKamiViews();
+
             var schemaAdapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleSpinnerItem, _schemaDisplayList);
             schemaAdapter.SetDropDownViewResource(Android.Resource.Layout.SimpleSpinnerDropDownItem);
             _spinnerSchema.Adapter = schemaAdapter;

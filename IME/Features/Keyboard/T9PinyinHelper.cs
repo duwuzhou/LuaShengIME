@@ -27,14 +27,43 @@ public static class T9PinyinHelper
     {
         var results = new List<string>();
         if (string.IsNullOrEmpty(digits)) return results;
+
+        if (digits.Length == 1)
+        {
+            int digit = digits[0] - '0';
+            if (digit >= 2 && digit <= 9)
+            {
+                foreach (char letter in DigitLetters[digit])
+                {
+                    results.Add(letter.ToString());
+                }
+            }
+            return results;
+        }
+
         SearchTrie(digits, 0, SyllableTrie, "", results);
 
-        // 按频率降序排列，频率相同按字母序
+        if (digits.Length > 1)
+        {
+            var multiCharOnly = results.FindAll(item => item.Length > 1);
+            if (multiCharOnly.Count > 0)
+            {
+                results = multiCharOnly;
+            }
+        }
+
+        // 按频率降序；频率相同优先更长音节，最后按字母序
         results.Sort((a, b) =>
         {
             SyllableFrequency.TryGetValue(a, out int freqA);
             SyllableFrequency.TryGetValue(b, out int freqB);
             int cmp = freqB.CompareTo(freqA);
+            if (cmp != 0)
+            {
+                return cmp;
+            }
+
+            cmp = b.Length.CompareTo(a.Length);
             return cmp != 0 ? cmp : string.Compare(a, b, StringComparison.Ordinal);
         });
 

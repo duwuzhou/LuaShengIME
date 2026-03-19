@@ -55,6 +55,12 @@ public class SpecialKeyHandler
     public void HandleEnter()
     {
         if (_connection == null || !_connection.IsValid) return;
+        if (_keyboardHandler == null) return;
+
+        if (TryCommitChineseComposingOnEnter())
+        {
+            return;
+        }
 
         int enterAction = IME.Features.Settings.SettingsActivity.GetEnterAction(_context);
 
@@ -68,6 +74,34 @@ public class SpecialKeyHandler
 
         _connection.CommitText("\n", 1);
         _engineHost.NotifyCommittedText("\n", false);
+    }
+
+    private bool TryCommitChineseComposingOnEnter()
+    {
+        if (_keyboardHandler.GetAsciiMode())
+        {
+            return false;
+        }
+
+        var engine = _engineHost.CurrentEngine;
+        if (engine == null)
+        {
+            return false;
+        }
+
+        string composingText = engine.GetComposingText();
+        if (string.IsNullOrEmpty(composingText))
+        {
+            return false;
+        }
+
+        engine.Reset();
+        _engineHost.ClearCandidates();
+        _connection.CommitText(composingText, 1);
+        _engineHost.NotifyCommittedText(composingText, false);
+
+        Log.Info("SpecialKeyHandler", $"Enter committed raw composing text: {composingText}");
+        return true;
     }
 
     public void HandleSpace()
@@ -267,4 +301,3 @@ public class SpecialKeyHandler
         _backspaceRunnable = null;
     }
 }
-

@@ -8,15 +8,28 @@ using Android.OS;
 using Android.Util;
 using Android.Views;
 using Android.Widget;
+using IME.Shared.Security;
 
 namespace IME.Features.Keyboard;
 
 [Activity(Label = "自定义符号", Theme = "@style/MyNoActionBarTheme")]
-public class QuickSymbolEditorActivity : Activity
+public class QuickSymbolEditorActivity : SecurityMonitoredActivity
 {
     private const string Tag = "QuickSymbolEditor";
     private const string PrefsName = "t9_quick_symbols";
     private const string SymbolsV2Key = "symbols_v2";
+
+    protected override void OnResume()
+    {
+        base.OnResume();
+        IME.Features.Settings.KamiVipVerificationCoordinator.Start(this, nameof(QuickSymbolEditorActivity));
+    }
+
+    protected override void OnPause()
+    {
+        IME.Features.Settings.KamiVipVerificationCoordinator.Stop();
+        base.OnPause();
+    }
 
     private EditText? _editDisplay;
     private EditText? _editCommit;
@@ -26,6 +39,10 @@ public class QuickSymbolEditorActivity : Activity
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
+        if (!EnsureSecurityAllowedNow())
+        {
+            return;
+        }
 
         _entries = LoadEntries();
 

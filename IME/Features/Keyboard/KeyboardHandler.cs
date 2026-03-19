@@ -43,7 +43,11 @@ public class KeyboardHandler
     private int _cachedBackspaceLongPressDelay;
     private string _t9DigitBuffer = "";
     private readonly List<int> _t9PinyinBoundaries = new();
+    private readonly List<string> _t9SelectedPinyins = new();
     private bool _t9PinyinEventBound;
+    private GnType _currentGnType = GnType.keyborad;
+    private string _gn1CurrentCategory = string.Empty;
+    private List<string> _gn1CurrentItems = new();
 
     public KeyboardHandler(Ime imeService, IInputEngineHost engineHost)
     {
@@ -63,6 +67,10 @@ public class KeyboardHandler
     public LinearLayout CreateKeyboardView()
     {
         DetachKeyboardEvents();
+        if (_gn1 != null)
+        {
+            _gn1.StateChanged -= HandleGn1StateChanged;
+        }
 
         _linearLayout = new LinearLayout(_imeService)
         {
@@ -97,6 +105,8 @@ public class KeyboardHandler
 
         _gn1 = new Gn1(_imeService, null);
         _gn1.SetImeService(_imeService);
+        _gn1.RestoreState(_gn1CurrentCategory, _gn1CurrentItems);
+        _gn1.StateChanged += HandleGn1StateChanged;
         _gn1.Visibility = ViewStates.Gone;
         _linearLayout.AddView(_gn1);
 
@@ -107,6 +117,9 @@ public class KeyboardHandler
         {
             SwitchToT9Mode();
         }
+
+        // 恢复上一次的 GN 面板状态
+        SwitchViewgn(_currentGnType);
 
         return _linearLayout;
     }
@@ -134,6 +147,8 @@ public class KeyboardHandler
             return;
         }
 
+        _currentGnType = gnType;
+
         View? activeKeyboardView = _isT9Mode ? (View?)_t9KeyboardView : _keyboardView;
         if (activeKeyboardView == null)
         {
@@ -152,6 +167,11 @@ public class KeyboardHandler
                 _gn1.Visibility = ViewStates.Visible;
                 break;
         }
+    }
+
+    public void ShowFunctionHome()
+    {
+        _gn1?.ShowHome();
     }
 
     public void SwitchKeyboard(IKeyboardType type)
@@ -390,7 +410,9 @@ public class KeyboardHandler
 
     public void UpdateChineseCandidates()
     {
-        _candidateManager.UpdateChineseCandidates(_engineHost.CurrentEngine);
+        string? displayComposingOverride = BuildT9DisplayComposingText();
+        bool hideNumericCandidates = _isT9Mode && !_asciiMode;
+        _candidateManager.UpdateChineseCandidates(_engineHost.CurrentEngine, displayComposingOverride, hideNumericCandidates);
         RefreshShiftKeyRole();
     }
 
@@ -458,7 +480,12 @@ public class KeyboardHandler
         _t9KeyboardView = null;
         _t9DigitBuffer = "";
         _t9PinyinBoundaries.Clear();
+        _t9SelectedPinyins.Clear();
         _keyboardView = null;
+        if (_gn1 != null)
+        {
+            _gn1.StateChanged -= HandleGn1StateChanged;
+        }
         _gn1 = null;
         _linearLayout = null;
         _keyEventListener = null;
@@ -579,6 +606,11 @@ public class KeyboardHandler
                     {
                         _t9PinyinBoundaries.RemoveAt(_t9PinyinBoundaries.Count - 1);
                     }
+
+                    while (_t9SelectedPinyins.Count > _t9PinyinBoundaries.Count)
+                    {
+                        _t9SelectedPinyins.RemoveAt(_t9SelectedPinyins.Count - 1);
+                    }
                 }
             }
             else if (e.PrimaryCode == SpaceKeyCode || ch == '0')
@@ -680,6 +712,7 @@ public class KeyboardHandler
     private void UpdateT9PinyinOptions()
     {
         if (_t9KeyboardView == null) return;
+        NormalizeT9SelectionState();
 
         if (_t9DigitBuffer.Length == 0)
         {
@@ -690,6 +723,14 @@ public class KeyboardHandler
         int resolvedLen = _t9PinyinBoundaries.Count > 0
             ? _t9PinyinBoundaries[_t9PinyinBoundaries.Count - 1]
             : 0;
+        if (resolvedLen < 0)
+        {
+            resolvedLen = 0;
+        }
+        if (resolvedLen > _t9DigitBuffer.Length)
+        {
+            resolvedLen = _t9DigitBuffer.Length;
+        }
         string unresolvedDigits = _t9DigitBuffer.Substring(resolvedLen);
         if (unresolvedDigits.Length == 0)
         {
@@ -697,7 +738,7 @@ public class KeyboardHandler
             return;
         }
 
-        var pinyins = T9PinyinHelper.GetMatchingSyllables(unresolvedDigits);
+        var pinyins = BuildT9CorrectionOptions(unresolvedDigits);
         if (pinyins.Count > 0)
         {
             _t9KeyboardView.ShowPinyinOptions(pinyins);
@@ -712,42 +753,395 @@ public class KeyboardHandler
     {
         _t9DigitBuffer = "";
         _t9PinyinBoundaries.Clear();
+        _t9SelectedPinyins.Clear();
         _t9KeyboardView?.RestoreSymbols();
     }
 
     private void HandlePinyinSelected(object? sender, string pinyin)
     {
         if (string.IsNullOrEmpty(pinyin) || _t9DigitBuffer.Length == 0) return;
+        NormalizeT9SelectionState();
 
         int pinyinDigitLen = T9PinyinHelper.GetDigitLength(pinyin);
+        if (pinyinDigitLen <= 0)
+        {
+            return;
+        }
+
         int resolvedLen = _t9PinyinBoundaries.Count > 0
             ? _t9PinyinBoundaries[_t9PinyinBoundaries.Count - 1]
             : 0;
         int newBoundary = resolvedLen + pinyinDigitLen;
-        _t9PinyinBoundaries.Add(newBoundary);
+        if (newBoundary > _t9DigitBuffer.Length)
+        {
+            return;
+        }
 
-        // 重新输入数字序列，在所有已选拼音边界处插入空格分隔符
+        _t9PinyinBoundaries.Add(newBoundary);
+        _t9SelectedPinyins.Add(pinyin);
+
+        // 先尝试按「已选拼音 + 剩余数字」重放，失败则回退到纯数字重放。
         IInputEngine? engine = _engineHost.CurrentEngine;
         if (engine == null) return;
 
+        bool appliedSelection = ReplayT9BufferToEngine(engine);
+        if (!appliedSelection)
+        {
+            // 本次纠错未被引擎接受，回滚本次选择，避免预览与引擎状态不一致。
+            if (_t9PinyinBoundaries.Count > 0)
+            {
+                _t9PinyinBoundaries.RemoveAt(_t9PinyinBoundaries.Count - 1);
+            }
+
+            if (_t9SelectedPinyins.Count > 0)
+            {
+                _t9SelectedPinyins.RemoveAt(_t9SelectedPinyins.Count - 1);
+            }
+        }
+
+        NormalizeT9SelectionState();
+        UpdateChineseCandidates();
+        UpdateT9PinyinOptions();
+    }
+
+    private string? BuildT9DisplayComposingText()
+    {
+        if (!_isT9Mode || _asciiMode)
+        {
+            return null;
+        }
+        NormalizeT9SelectionState();
+
+        if (_t9DigitBuffer.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        string resolvedPinyinText = BuildResolvedT9PinyinText();
+
+        int resolvedLen = _t9PinyinBoundaries.Count > 0
+            ? _t9PinyinBoundaries[_t9PinyinBoundaries.Count - 1]
+            : 0;
+        if (resolvedLen < 0)
+        {
+            resolvedLen = 0;
+        }
+        if (resolvedLen > _t9DigitBuffer.Length)
+        {
+            resolvedLen = _t9DigitBuffer.Length;
+        }
+
+        string unresolvedDigits = _t9DigitBuffer.Substring(resolvedLen);
+        string unresolvedPreview = BuildUnresolvedT9Preview(unresolvedDigits);
+
+        if (!string.IsNullOrEmpty(resolvedPinyinText) && !string.IsNullOrEmpty(unresolvedPreview))
+        {
+            return $"{resolvedPinyinText}'{unresolvedPreview}";
+        }
+
+        if (!string.IsNullOrEmpty(resolvedPinyinText))
+        {
+            return resolvedPinyinText;
+        }
+
+        if (!string.IsNullOrEmpty(unresolvedPreview))
+        {
+            return unresolvedPreview;
+        }
+
+        // 安全兜底：当 buffer 与引擎状态短暂不同步时，优先展示引擎当前串。
+        string composingText = _engineHost.CurrentEngine?.GetComposingText() ?? string.Empty;
+        return composingText;
+    }
+
+    private string BuildResolvedT9PinyinText()
+    {
+        if (_t9SelectedPinyins.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var builder = new System.Text.StringBuilder();
+        int count = Math.Min(_t9SelectedPinyins.Count, _t9PinyinBoundaries.Count);
+        for (int i = 0; i < count; i++)
+        {
+            string syllable = _t9SelectedPinyins[i];
+            if (string.IsNullOrWhiteSpace(syllable))
+            {
+                continue;
+            }
+
+            if (builder.Length > 0)
+            {
+                builder.Append('\'');
+            }
+
+            builder.Append(syllable.ToLowerInvariant());
+        }
+
+        return builder.ToString();
+    }
+
+    private static string BuildUnresolvedT9Preview(string unresolvedDigits)
+    {
+        if (string.IsNullOrEmpty(unresolvedDigits))
+        {
+            return string.Empty;
+        }
+
+        var parts = new List<string>();
+        int cursor = 0;
+        int safety = 24;
+
+        while (cursor < unresolvedDigits.Length && safety-- > 0)
+        {
+            string remaining = unresolvedDigits.Substring(cursor);
+            List<string> hints = T9PinyinHelper.GetMatchingSyllables(remaining);
+            if (hints.Count == 0)
+            {
+                parts.Add(remaining);
+                break;
+            }
+
+            string? best = null;
+            for (int i = 0; i < hints.Count; i++)
+            {
+                string candidate = hints[i];
+                if (string.IsNullOrWhiteSpace(candidate))
+                {
+                    continue;
+                }
+
+                if (best == null || candidate.Length > best.Length)
+                {
+                    best = candidate;
+                }
+            }
+
+            if (string.IsNullOrEmpty(best))
+            {
+                parts.Add(remaining);
+                break;
+            }
+
+            parts.Add(best.ToLowerInvariant());
+
+            int consume = T9PinyinHelper.GetDigitLength(best);
+            if (consume <= 0)
+            {
+                parts.Add(remaining);
+                break;
+            }
+
+            if (consume > remaining.Length)
+            {
+                consume = remaining.Length;
+            }
+
+            cursor += consume;
+        }
+
+        return string.Join("'", parts);
+    }
+
+    private static List<string> BuildT9CorrectionOptions(string unresolvedDigits)
+    {
+        List<string> hints = T9PinyinHelper.GetMatchingSyllables(unresolvedDigits);
+        if (hints.Count == 0)
+        {
+            return hints;
+        }
+
+        var byLength = new Dictionary<int, List<string>>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        for (int i = 0; i < hints.Count; i++)
+        {
+            string candidate = hints[i];
+            if (string.IsNullOrWhiteSpace(candidate))
+            {
+                continue;
+            }
+
+            string normalized = candidate.ToLowerInvariant();
+            if (!seen.Add(normalized))
+            {
+                continue;
+            }
+
+            int len = normalized.Length;
+            if (len <= 0 || len > unresolvedDigits.Length)
+            {
+                continue;
+            }
+
+            if (!byLength.TryGetValue(len, out List<string>? bucket))
+            {
+                bucket = new List<string>();
+                byLength[len] = bucket;
+            }
+
+            // 每个长度保留前 2 个高频拼音，既能纠错也能继续分段。
+            if (bucket.Count < 2)
+            {
+                bucket.Add(normalized);
+            }
+        }
+
+        var results = new List<string>(8);
+        for (int len = 1; len <= unresolvedDigits.Length && results.Count < 8; len++)
+        {
+            if (!byLength.TryGetValue(len, out List<string>? bucket))
+            {
+                continue;
+            }
+
+            for (int i = 0; i < bucket.Count && results.Count < 8; i++)
+            {
+                results.Add(bucket[i]);
+            }
+        }
+
+        if (results.Count > 0)
+        {
+            return results;
+        }
+
+        for (int i = 0; i < hints.Count && results.Count < 8; i++)
+        {
+            string candidate = hints[i];
+            if (!string.IsNullOrWhiteSpace(candidate))
+            {
+                results.Add(candidate.ToLowerInvariant());
+            }
+        }
+
+        return results;
+    }
+
+    private bool ReplayT9BufferToEngine(IInputEngine engine)
+    {
+        if (!TryReplayWithSelectedPinyin(engine))
+        {
+            ReplayWithDigits(engine);
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool TryReplayWithSelectedPinyin(IInputEngine engine)
+    {
+        if (_t9SelectedPinyins.Count == 0)
+        {
+            return false;
+        }
+
+        int resolvedLen = _t9PinyinBoundaries.Count > 0
+            ? _t9PinyinBoundaries[_t9PinyinBoundaries.Count - 1]
+            : 0;
+        string unresolvedDigits = _t9DigitBuffer.Substring(Math.Min(resolvedLen, _t9DigitBuffer.Length));
+
+        var normalizedSyllables = new List<string>(_t9SelectedPinyins.Count);
+        for (int i = 0; i < _t9SelectedPinyins.Count; i++)
+        {
+            string syllable = _t9SelectedPinyins[i];
+            if (!string.IsNullOrWhiteSpace(syllable))
+            {
+                normalizedSyllables.Add(syllable);
+            }
+        }
+
+        var replayText = new List<char>();
+        for (int i = 0; i < normalizedSyllables.Count; i++)
+        {
+            string syllable = normalizedSyllables[i];
+
+            for (int j = 0; j < syllable.Length; j++)
+            {
+                replayText.Add(char.ToLowerInvariant(syllable[j]));
+            }
+
+            bool needDelimiter = i < normalizedSyllables.Count - 1 || unresolvedDigits.Length > 0;
+            if (needDelimiter)
+            {
+                replayText.Add(' ');
+            }
+        }
+
+        for (int i = 0; i < unresolvedDigits.Length; i++)
+        {
+            replayText.Add(unresolvedDigits[i]);
+        }
+
+        if (replayText.Count == 0)
+        {
+            return false;
+        }
+
+        engine.Reset();
+        bool acceptedAny = false;
+        for (int i = 0; i < replayText.Count; i++)
+        {
+            bool accepted = engine.ProcessKey(replayText[i]);
+            if (!accepted)
+            {
+                return false;
+            }
+
+            acceptedAny = true;
+        }
+
+        return acceptedAny;
+    }
+
+    private void NormalizeT9SelectionState()
+    {
+        if (_t9DigitBuffer.Length <= 0)
+        {
+            _t9PinyinBoundaries.Clear();
+            _t9SelectedPinyins.Clear();
+            return;
+        }
+
+        int maxLen = _t9DigitBuffer.Length;
+        for (int i = _t9PinyinBoundaries.Count - 1; i >= 0; i--)
+        {
+            int boundary = _t9PinyinBoundaries[i];
+            int previous = i > 0 ? _t9PinyinBoundaries[i - 1] : 0;
+            if (boundary <= previous || boundary > maxLen)
+            {
+                _t9PinyinBoundaries.RemoveAt(i);
+            }
+        }
+
+        while (_t9SelectedPinyins.Count > _t9PinyinBoundaries.Count)
+        {
+            _t9SelectedPinyins.RemoveAt(_t9SelectedPinyins.Count - 1);
+        }
+
+        while (_t9PinyinBoundaries.Count > _t9SelectedPinyins.Count)
+        {
+            _t9PinyinBoundaries.RemoveAt(_t9PinyinBoundaries.Count - 1);
+        }
+    }
+
+    private void ReplayWithDigits(IInputEngine engine)
+    {
         engine.Reset();
 
         int boundaryIdx = 0;
         for (int i = 0; i < _t9DigitBuffer.Length; i++)
         {
-            // 在每个已选音节边界处插入空格分隔符
             if (boundaryIdx < _t9PinyinBoundaries.Count
                 && i == _t9PinyinBoundaries[boundaryIdx]
                 && i < _t9DigitBuffer.Length)
             {
-                engine.ProcessKey(32); // 空格分隔符
+                engine.ProcessKey(32);
                 boundaryIdx++;
             }
+
             engine.ProcessKey(_t9DigitBuffer[i]);
         }
-
-        UpdateChineseCandidates();
-        UpdateT9PinyinOptions();
     }
 
     private void HandlePress(object? sender, KeyboardKeyEventArgs e)
@@ -798,5 +1192,13 @@ public class KeyboardHandler
         }
 
         _keyEventListener?.OnKeyLongPress(keyCode);
+    }
+
+    private void HandleGn1StateChanged(object? sender, Gn1StateChangedEventArgs e)
+    {
+        _gn1CurrentCategory = e.CurrentCategory ?? string.Empty;
+        _gn1CurrentItems = e.CurrentItems.Count > 0
+            ? new List<string>(e.CurrentItems)
+            : new List<string>();
     }
 }

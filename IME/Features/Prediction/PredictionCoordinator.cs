@@ -158,7 +158,11 @@ internal sealed class PredictionCoordinator
         var predictions = new List<string>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
 
-        AppendDistinct(predictions, seen, _customStore.GetPredictions(token), maxResults);
+        if (KamiVipConfig.CanUseCustomPrediction(_context))
+        {
+            AppendDistinct(predictions, seen, _customStore.GetPredictions(token), maxResults);
+        }
+
         if (predictions.Count < maxResults)
         {
             AppendDistinct(predictions, seen, TryGetRimePredictions(maxResults), maxResults);

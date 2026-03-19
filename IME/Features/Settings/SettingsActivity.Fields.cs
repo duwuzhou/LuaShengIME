@@ -59,6 +59,7 @@ namespace IME.Features.Settings
         private EditText _editTapFallbackMaxDurationMs;
         private EditText _editTapFallbackMoveSlopDp;
         private Button _btnResetTapFallback;
+        private Button _btnKamiVipPage;
         private bool _suppressTapFallbackTextEvents;
 
         private LocalUserLexiconStore _localLexiconStore;

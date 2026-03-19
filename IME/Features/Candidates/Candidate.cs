@@ -4,6 +4,8 @@ using Android.Views;
 using Android.Widget;
 using AndroidX.RecyclerView.Widget;
 using IME.Features.Keyboard;
+using IME.Shared.ResourceProtection;
+using System;
 
 namespace IME.Features.Candidates
 {
@@ -35,7 +37,12 @@ namespace IME.Features.Candidates
             Orientation = Orientation.Vertical;
 
             LayoutInflater inflater = (LayoutInflater)context.GetSystemService(Context.LayoutInflaterService);
-            inflater.Inflate(Resource.Layout.Candidate, this, true);
+            int candidateLayoutId = ResolveLayoutId(context, "candidate");
+#if DEBUG
+            inflater.Inflate(candidateLayoutId, this, true);
+#else
+            EncryptedLayout.Inflate(inflater, "layout/candidate", candidateLayoutId, this, true);
+#endif
 
             _inputPreviewContainer = FindViewById<LinearLayout>(Resource.Id.inputPreviewContainer);
             _inputPreviewText = FindViewById<TextView>(Resource.Id.inputPreviewText);
@@ -80,6 +87,17 @@ namespace IME.Features.Candidates
             _candidatePanel?.Cleanup();
             _candidatePanel = null;
             base.OnDetachedFromWindow();
+        }
+
+        private static int ResolveLayoutId(Context context, string layoutName)
+        {
+            int layoutId = context.Resources?.GetIdentifier(layoutName, "layout", context.PackageName) ?? 0;
+            if (layoutId == 0)
+            {
+                throw new InvalidOperationException($"Layout resource not found: {layoutName}");
+            }
+
+            return layoutId;
         }
     }
 }

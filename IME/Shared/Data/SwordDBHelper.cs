@@ -1,44 +1,44 @@
+using System;
+using System.Collections.Generic;
 using Android.Content;
 using Android.Database;
 using Android.Database.Sqlite;
-using IME.Shared.Utils.FileOperation;
-using IME.Shared.Models;
-using Newtonsoft.Json;
-using System.Collections.Generic;
 using Android.Util;
+using IME.Shared.Models;
+using IME.Shared.Utils.FileOperation;
+using Newtonsoft.Json;
 
 namespace IME.Shared.Data;
 
 public class SwordDBHelper : SQLiteOpenHelper
 {
     private static readonly object _lock = new object();
-    //设置唯一的数据库名
-    private static readonly string dbName = "SwordDB.db";
-    private static readonly int dbVersion = 1;
 
-    // 分类表
-    // 快捷短语表名
-    public static readonly string SwordTableName = "SwordTable";
-    private static readonly string COL_CAT_ID = "_id";
-    private static readonly string COL_CAT_NAME = "name";
+    private const string DbName = "SwordDB.db";
+    private const int DbVersion = 2;
 
-    // 快捷短语的表
-    private static readonly string TABLE_ITEMS = "items";
-    private static readonly string COL_ITEM_ID = "_id";
-    private static readonly string COL_ITEM_CAT_ID = "category_id";
-    private static readonly string COL_ITEM_NAME = "item_name";
+    public const string SwordTableName = "SwordTable";
+    private const string TableItems = "items";
 
-    public SwordDBHelper(Context context) : base(context, dbName, null, dbVersion)
+    private const string ColCatId = "_id";
+    private const string ColCatName = "name";
+    private const string ColCatBuiltin = "is_builtin";
+
+    private const string ColItemId = "_id";
+    private const string ColItemCatId = "category_id";
+    private const string ColItemName = "item_name";
+    private const string ColItemBuiltin = "is_builtin";
+
+    public SwordDBHelper(Context context)
+        : base(context, DbName, null, DbVersion)
     {
-        // 不在构造函数中打开数据库，让 SQLiteOpenHelper 自动管理
     }
 
-    // 创建数据库表
     public override void OnCreate(SQLiteDatabase db)
     {
         lock (_lock)
         {
-            Log.Info("SwordDBHelper", "创建数据库");
+            Log.Info("SwordDBHelper", "Create database tables.");
             EnsureTables(db);
             EnsureSeedData(db);
         }
@@ -57,143 +57,151 @@ public class SwordDBHelper : SQLiteOpenHelper
             }
             catch (Exception ex)
             {
-                Log.Error("SwordDBHelper", $"打开数据库时检查失败: {ex.Message}");
+                Log.Error("SwordDBHelper", $"Open database failed: {ex.Message}");
             }
         }
     }
 
     public override void OnUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
     {
-        //更新数据库
+        lock (_lock)
+        {
+            EnsureTables(db);
+            EnsureSeedData(db);
+        }
     }
 
     private void EnsureTables(SQLiteDatabase db)
     {
-        if (TableExists(db, SwordTableName))
+        if (!TableExists(db, SwordTableName))
+        {
+            string createCategoriesTable =
+                "CREATE TABLE " + SwordTableName + " (" +
+                ColCatId + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                ColCatName + " TEXT UNIQUE, " +
+                ColCatBuiltin + " INTEGER NOT NULL DEFAULT 0)";
+
+            db.ExecSQL(createCategoriesTable);
+        }
+        else
+        {
+            EnsureColumnExists(db, SwordTableName, ColCatBuiltin, "INTEGER NOT NULL DEFAULT 0");
+        }
+
+        if (!TableExists(db, TableItems))
+        {
+            string createItemsTable =
+                "CREATE TABLE " + TableItems + " (" +
+                ColItemId + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                ColItemCatId + " INTEGER, " +
+                ColItemName + " TEXT UNIQUE, " +
+                ColItemBuiltin + " INTEGER NOT NULL DEFAULT 0, " +
+                "FOREIGN KEY(" + ColItemCatId + ") REFERENCES " + SwordTableName + "(" + ColCatId + "))";
+
+            db.ExecSQL(createItemsTable);
+        }
+        else
+        {
+            EnsureColumnExists(db, TableItems, ColItemBuiltin, "INTEGER NOT NULL DEFAULT 0");
+        }
+    }
+
+    private static bool TableExists(SQLiteDatabase db, string tableName)
+    {
+        using ICursor cursor = db.RawQuery(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            new[] { tableName });
+
+        return cursor.MoveToFirst();
+    }
+
+    private static void EnsureColumnExists(SQLiteDatabase db, string tableName, string columnName, string columnDefinition)
+    {
+        if (ColumnExists(db, tableName, columnName))
         {
             return;
         }
 
-        //创建分类表
-        string createCategoriesTable = "CREATE TABLE " + SwordTableName + "("
-                                   + COL_CAT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                                   + COL_CAT_NAME + " TEXT UNIQUE)";
-        db.ExecSQL(createCategoriesTable);
-
-        // 创建短语表（带外键约束）
-        string createItemsTable = "CREATE TABLE " + TABLE_ITEMS + "("
-                              + COL_ITEM_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                              + COL_ITEM_CAT_ID + " INTEGER, "
-                              + COL_ITEM_NAME + " TEXT UNIQUE,"
-                              + "FOREIGN KEY(" + COL_ITEM_CAT_ID + ") REFERENCES "
-                              + SwordTableName + "(" + COL_CAT_ID + "))";
-        db.ExecSQL(createItemsTable);
+        db.ExecSQL($"ALTER TABLE {tableName} ADD COLUMN {columnName} {columnDefinition}");
     }
 
-    private bool TableExists(SQLiteDatabase db, string tableName)
+    private static bool ColumnExists(SQLiteDatabase db, string tableName, string columnName)
     {
-        using var cursor = db.RawQuery("SELECT name FROM sqlite_master WHERE type='table' AND name=?", new[] { tableName });
-        return cursor.MoveToFirst();
-    }
-
-    private long GetCategoryCount(SQLiteDatabase db)
-    {
-        using var cursor = db.RawQuery($"SELECT COUNT(1) FROM {SwordTableName}", null);
-        if (!cursor.MoveToFirst())
+        using ICursor cursor = db.RawQuery($"PRAGMA table_info({tableName})", null);
+        while (cursor.MoveToNext())
         {
-            return 0;
+            string currentName = cursor.GetString(1);
+            if (string.Equals(currentName, columnName, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
         }
 
-        return cursor.GetLong(0);
+        return false;
     }
 
     private void EnsureSeedData(SQLiteDatabase db)
     {
-        if (GetCategoryCount(db) > 0)
+        List<SdDataModel> seedData = LoadSeedData();
+        if (seedData.Count == 0)
         {
             return;
         }
 
-        InsertInitData(db);
-    }
-
-    private void InsertInitData(SQLiteDatabase db)
-    {
-        Log.Info("SwordDBHelper", "插入初始化数据");
+        db.BeginTransaction();
         try
         {
-            var fileReadOperation = new FileReadOperation();
-            var json = fileReadOperation.ReadJsonFile(Application.Context, Resource.Raw.sd);
+            db.ExecSQL($"UPDATE {SwordTableName} SET {ColCatBuiltin}=0");
+            db.ExecSQL($"UPDATE {TableItems} SET {ColItemBuiltin}=0");
 
-            if (string.IsNullOrWhiteSpace(json))
+            foreach (var category in seedData)
             {
-                Log.Warn("SwordDBHelper", "sd.json 读取为空，跳过初始化数据");
-                return;
-            }
-
-            var weapons = JsonConvert.DeserializeObject<List<SdDataModel>>(json);
-            if (weapons == null || weapons.Count == 0)
-            {
-                Log.Warn("SwordDBHelper", "sd.json 解析为空，跳过初始化数据");
-                return;
-            }
-
-            // 使用事务提升插入性能
-            db.BeginTransaction();
-
-            try
-            {
-                foreach (var weapon in weapons)
+                string categoryName = NormalizeInput(category.Name);
+                if (string.IsNullOrEmpty(categoryName))
                 {
-                    // 检查分类是否已经存在
-                    using var cursor = db.Query(SwordTableName, new[] { COL_CAT_ID }, COL_CAT_NAME + " = ?", new[] { weapon.Name }, null, null, null);
-                    long categoryId = -1;
-
-                    if (cursor.MoveToFirst())
-                    {
-                        // 分类已存在，获取其ID
-                        categoryId = cursor.GetLong(0);
-                    }
-                    else
-                    {
-                        // 插入分类表
-                        var categoryValues = new ContentValues();
-                        categoryValues.Put(COL_CAT_NAME, weapon.Name);
-                        categoryId = db.InsertOrThrow(SwordTableName, null, categoryValues);
-                    }
-
-                    // 插入短语数据
-                    foreach (var move in weapon.Data)
-                    {
-                        using var cursor1 = db.Query(TABLE_ITEMS, new[] { COL_ITEM_ID }, COL_ITEM_NAME + " = ?", new[] { move }, null, null, null);
-
-                        if (!cursor1.MoveToFirst())
-                        {
-                            var itemValues = new ContentValues();
-                            itemValues.Put(COL_ITEM_CAT_ID, categoryId);
-                            itemValues.Put(COL_ITEM_NAME, move);
-                            db.InsertOrThrow(TABLE_ITEMS, null, itemValues);
-                        }
-                    }
+                    continue;
                 }
 
-                db.SetTransactionSuccessful();
-                Log.Info("SwordDBHelper", "插入数据成功");
+                long categoryId = EnsureCategoryId(db, categoryName, isBuiltin: true);
+                foreach (string item in category.Data ?? new List<string>())
+                {
+                    EnsureItem(db, categoryId, item, isBuiltin: true);
+                }
             }
-            finally
-            {
-                db.EndTransaction();
-            }
+
+            db.SetTransactionSuccessful();
         }
         catch (Exception ex)
         {
-            Android.Util.Log.Error("DB_INSERT", $"初始化数据失败: {ex.Message}");
-            throw new SQLiteException("数据库初始化失败");
+            Log.Error("SwordDBHelper", $"Ensure seed data failed: {ex.Message}");
+            throw;
         }
-        // 不要在这里关闭数据库，让 SQLiteOpenHelper 管理数据库生命周期
+        finally
+        {
+            db.EndTransaction();
+        }
     }
 
-    //查询分类数据
+    private static List<SdDataModel> LoadSeedData()
+    {
+        try
+        {
+            var fileReadOperation = new FileReadOperation();
+            string json = fileReadOperation.ReadJsonFile(Application.Context, Resource.Raw.sd);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return new List<SdDataModel>();
+            }
+
+            return JsonConvert.DeserializeObject<List<SdDataModel>>(json) ?? new List<SdDataModel>();
+        }
+        catch (Exception ex)
+        {
+            Log.Error("SwordDBHelper", $"Load seed data failed: {ex.Message}");
+            return new List<SdDataModel>();
+        }
+    }
+
     public bool AddCategory(string categoryName)
     {
         lock (_lock)
@@ -204,15 +212,16 @@ public class SwordDBHelper : SQLiteOpenHelper
                 return false;
             }
 
-            using var db = this.WritableDatabase;
-            using var existing = db.Query(SwordTableName, new[] { COL_CAT_ID }, COL_CAT_NAME + " = ?", new[] { normalized }, null, null, null);
+            using SQLiteDatabase db = WritableDatabase;
+            using ICursor existing = db.Query(SwordTableName, new[] { ColCatId }, ColCatName + " = ?", new[] { normalized }, null, null, null);
             if (existing.MoveToFirst())
             {
                 return false;
             }
 
             var values = new ContentValues();
-            values.Put(COL_CAT_NAME, normalized);
+            values.Put(ColCatName, normalized);
+            values.Put(ColCatBuiltin, 0);
             return db.Insert(SwordTableName, null, values) > 0;
         }
     }
@@ -228,23 +237,24 @@ public class SwordDBHelper : SQLiteOpenHelper
                 return false;
             }
 
-            using var db = this.WritableDatabase;
-            long categoryId = EnsureCategoryId(db, normalizedCategory);
+            using SQLiteDatabase db = WritableDatabase;
+            long categoryId = EnsureCategoryId(db, normalizedCategory, isBuiltin: false);
             if (categoryId <= 0)
             {
                 return false;
             }
 
-            using var existing = db.Query(TABLE_ITEMS, new[] { COL_ITEM_ID }, COL_ITEM_NAME + " = ?", new[] { normalizedItem }, null, null, null);
+            using ICursor existing = db.Query(TableItems, new[] { ColItemId }, ColItemName + " = ?", new[] { normalizedItem }, null, null, null);
             if (existing.MoveToFirst())
             {
                 return false;
             }
 
             var values = new ContentValues();
-            values.Put(COL_ITEM_CAT_ID, categoryId);
-            values.Put(COL_ITEM_NAME, normalizedItem);
-            return db.Insert(TABLE_ITEMS, null, values) > 0;
+            values.Put(ColItemCatId, categoryId);
+            values.Put(ColItemName, normalizedItem);
+            values.Put(ColItemBuiltin, 0);
+            return db.Insert(TableItems, null, values) > 0;
         }
     }
 
@@ -264,90 +274,97 @@ public class SwordDBHelper : SQLiteOpenHelper
                 return true;
             }
 
-            using var db = this.WritableDatabase;
-            using var oldCursor = db.Query(SwordTableName, new[] { COL_CAT_ID }, COL_CAT_NAME + " = ?", new[] { oldName }, null, null, null);
+            using SQLiteDatabase db = WritableDatabase;
+            using ICursor oldCursor = db.Query(SwordTableName, new[] { ColCatId }, ColCatName + " = ?", new[] { oldName }, null, null, null);
             if (!oldCursor.MoveToFirst())
             {
                 return false;
             }
 
-            using var newCursor = db.Query(SwordTableName, new[] { COL_CAT_ID }, COL_CAT_NAME + " = ?", new[] { newName }, null, null, null);
+            using ICursor newCursor = db.Query(SwordTableName, new[] { ColCatId }, ColCatName + " = ?", new[] { newName }, null, null, null);
             if (newCursor.MoveToFirst())
             {
                 return false;
             }
 
             var values = new ContentValues();
-            values.Put(COL_CAT_NAME, newName);
-            return db.Update(SwordTableName, values, COL_CAT_NAME + " = ?", new[] { oldName }) > 0;
+            values.Put(ColCatName, newName);
+            values.Put(ColCatBuiltin, 0);
+            return db.Update(SwordTableName, values, ColCatName + " = ?", new[] { oldName }) > 0;
         }
     }
 
-    public List<string> QueryCategories()
+    public List<string> QueryCategories(bool includeCustom = true)
     {
         lock (_lock)
         {
-            using var db = this.ReadableDatabase;
-            var categories = new List<string>();
-            using var cursor = db.Query(SwordTableName, new[] { COL_CAT_NAME }, null, null, null, null, null);
+            using SQLiteDatabase db = ReadableDatabase;
+            using ICursor cursor = includeCustom
+                ? db.Query(SwordTableName, new[] { ColCatName }, null, null, null, null, $"{ColCatName} ASC")
+                : db.RawQuery(
+                    "SELECT DISTINCT c." + ColCatName +
+                    " FROM " + SwordTableName + " c INNER JOIN " + TableItems + " i ON c." + ColCatId + " = i." + ColItemCatId +
+                    " WHERE c." + ColCatBuiltin + " = 1 AND i." + ColItemBuiltin + " = 1 ORDER BY c." + ColCatName + " ASC",
+                    null);
 
-            if (cursor.MoveToFirst())
+            var categories = new List<string>();
+            while (cursor.MoveToNext())
             {
-                do
-                {
-                    categories.Add(cursor.GetString(0));
-                } while (cursor.MoveToNext());
+                categories.Add(cursor.GetString(0));
             }
 
             return categories;
         }
     }
 
-    // 查询招式数据
-    public List<string> QueryItemsByCategory(string categoryName)
+    public List<string> QueryItemsByCategory(string categoryName, bool includeCustom = true)
     {
         lock (_lock)
         {
-            using var db = this.ReadableDatabase;
-            var items = new List<string>();
-            var query = "SELECT " + COL_ITEM_NAME + " FROM " + TABLE_ITEMS + " WHERE " + COL_ITEM_CAT_ID + " IN (SELECT " + COL_CAT_ID + " FROM " + SwordTableName + " WHERE " + COL_CAT_NAME + " = ?)";
-            using var cursor = db.RawQuery(query, new[] { categoryName });
+            using SQLiteDatabase db = ReadableDatabase;
+            string sql =
+                "SELECT " + ColItemName +
+                " FROM " + TableItems +
+                " WHERE " + ColItemCatId + " IN (SELECT " + ColCatId + " FROM " + SwordTableName + " WHERE " + ColCatName + " = ?)" +
+                (includeCustom ? string.Empty : " AND " + ColItemBuiltin + " = 1") +
+                " ORDER BY " + ColItemName + " ASC";
 
-            if (cursor.MoveToFirst())
+            using ICursor cursor = db.RawQuery(sql, new[] { categoryName });
+            var items = new List<string>();
+
+            while (cursor.MoveToNext())
             {
-                do
-                {
-                    items.Add(cursor.GetString(0));
-                } while (cursor.MoveToNext());
+                items.Add(cursor.GetString(0));
             }
+
             return items;
         }
     }
-    
-    // 随机返回招式数据，items 条数
-    public List<string> QueryRandomItemsByCategory(string categoryName, int items)
+
+    public List<string> QueryRandomItemsByCategory(string categoryName, int items, bool includeCustom = true)
     {
         lock (_lock)
         {
-            using var db = this.ReadableDatabase;
-            var itemsList = new List<string>();
-            // 随机查询并返回指定的条数
-            var query = "SELECT " + COL_ITEM_NAME + " FROM " + TABLE_ITEMS + " WHERE " + COL_ITEM_CAT_ID + " IN (SELECT " + COL_CAT_ID + " FROM " + SwordTableName + " WHERE " + COL_CAT_NAME + " = ?) ORDER BY RANDOM() LIMIT ?";
-            
-            using var cursor = db.RawQuery(query, new[] { categoryName, items.ToString()});
+            using SQLiteDatabase db = ReadableDatabase;
+            string sql =
+                "SELECT " + ColItemName +
+                " FROM " + TableItems +
+                " WHERE " + ColItemCatId + " IN (SELECT " + ColCatId + " FROM " + SwordTableName + " WHERE " + ColCatName + " = ?)" +
+                (includeCustom ? string.Empty : " AND " + ColItemBuiltin + " = 1") +
+                " ORDER BY RANDOM() LIMIT ?";
 
-            if (cursor.MoveToFirst())
+            using ICursor cursor = db.RawQuery(sql, new[] { categoryName, Math.Max(1, items).ToString() });
+            var itemsList = new List<string>();
+
+            while (cursor.MoveToNext())
             {
-                do
-                {
-                    itemsList.Add(cursor.GetString(0));
-                } while (cursor.MoveToNext());
+                itemsList.Add(cursor.GetString(0));
             }
+
             return itemsList;
         }
     }
-    
-    // ??????
+
     public int DeleteCategory(string categoryName)
     {
         lock (_lock)
@@ -358,12 +375,16 @@ public class SwordDBHelper : SQLiteOpenHelper
                 return 0;
             }
 
-            using var db = this.WritableDatabase;
+            using SQLiteDatabase db = WritableDatabase;
             db.BeginTransaction();
             try
             {
-                db.Delete(TABLE_ITEMS, COL_ITEM_CAT_ID + " IN (SELECT " + COL_CAT_ID + " FROM " + SwordTableName + " WHERE " + COL_CAT_NAME + " = ?)", new[] { normalized });
-                var deletedRows = db.Delete(SwordTableName, COL_CAT_NAME + " = ?", new[] { normalized });
+                db.Delete(
+                    TableItems,
+                    ColItemCatId + " IN (SELECT " + ColCatId + " FROM " + SwordTableName + " WHERE " + ColCatName + " = ?)",
+                    new[] { normalized });
+
+                int deletedRows = db.Delete(SwordTableName, ColCatName + " = ?", new[] { normalized });
                 db.SetTransactionSuccessful();
                 return deletedRows;
             }
@@ -378,33 +399,95 @@ public class SwordDBHelper : SQLiteOpenHelper
     {
         lock (_lock)
         {
-            using var db = this.WritableDatabase;
-            var deletedRows = db.Delete(TABLE_ITEMS, COL_ITEM_NAME + " = ? AND " + COL_ITEM_CAT_ID + " IN (SELECT " + COL_CAT_ID + " FROM " + SwordTableName + " WHERE " + COL_CAT_NAME + " = ?)", new[] { itemName, categoryName });
-            return deletedRows;
+            using SQLiteDatabase db = WritableDatabase;
+            return db.Delete(
+                TableItems,
+                ColItemName + " = ? AND " + ColItemCatId + " IN (SELECT " + ColCatId + " FROM " + SwordTableName + " WHERE " + ColCatName + " = ?)",
+                new[] { itemName, categoryName });
         }
     }
 
-    private long EnsureCategoryId(SQLiteDatabase db, string categoryName)
+    private static long EnsureCategoryId(SQLiteDatabase db, string categoryName, bool isBuiltin)
     {
-        using var cursor = db.Query(SwordTableName, new[] { COL_CAT_ID }, COL_CAT_NAME + " = ?", new[] { categoryName }, null, null, null);
+        using ICursor cursor = db.Query(SwordTableName, new[] { ColCatId }, ColCatName + " = ?", new[] { categoryName }, null, null, null);
         if (cursor.MoveToFirst())
         {
-            return cursor.GetLong(0);
+            long categoryId = cursor.GetLong(0);
+            if (isBuiltin)
+            {
+                var update = new ContentValues();
+                update.Put(ColCatBuiltin, 1);
+                db.Update(SwordTableName, update, ColCatId + " = ?", new[] { categoryId.ToString() });
+            }
+
+            return categoryId;
         }
 
         var values = new ContentValues();
-        values.Put(COL_CAT_NAME, categoryName);
+        values.Put(ColCatName, categoryName);
+        values.Put(ColCatBuiltin, isBuiltin ? 1 : 0);
         return db.Insert(SwordTableName, null, values);
+    }
+
+    private static void EnsureItem(SQLiteDatabase db, long categoryId, string itemName, bool isBuiltin)
+    {
+        string normalizedItem = NormalizeInput(itemName);
+        if (categoryId <= 0 || string.IsNullOrEmpty(normalizedItem))
+        {
+            return;
+        }
+
+        using ICursor cursor = db.Query(
+            TableItems,
+            new[] { ColItemId },
+            ColItemName + " = ? AND " + ColItemCatId + " = ?",
+            new[] { normalizedItem, categoryId.ToString() },
+            null,
+            null,
+            null,
+            "1");
+
+        if (cursor.MoveToFirst())
+        {
+            long itemId = cursor.GetLong(0);
+            var update = new ContentValues();
+            update.Put(ColItemBuiltin, isBuiltin ? 1 : 0);
+            db.Update(TableItems, update, ColItemId + " = ?", new[] { itemId.ToString() });
+            return;
+        }
+
+        using ICursor sameTextCursor = db.Query(
+            TableItems,
+            new[] { ColItemId },
+            ColItemName + " = ?",
+            new[] { normalizedItem },
+            null,
+            null,
+            null,
+            "1");
+
+        if (sameTextCursor.MoveToFirst())
+        {
+            if (isBuiltin)
+            {
+                long itemId = sameTextCursor.GetLong(0);
+                var update = new ContentValues();
+                update.Put(ColItemBuiltin, 1);
+                db.Update(TableItems, update, ColItemId + " = ?", new[] { itemId.ToString() });
+            }
+
+            return;
+        }
+
+        var values = new ContentValues();
+        values.Put(ColItemCatId, categoryId);
+        values.Put(ColItemName, normalizedItem);
+        values.Put(ColItemBuiltin, isBuiltin ? 1 : 0);
+        db.Insert(TableItems, null, values);
     }
 
     private static string NormalizeInput(string value)
     {
         return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
-
 }
-
-
-
-
-

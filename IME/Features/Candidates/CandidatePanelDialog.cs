@@ -7,6 +7,7 @@ using Android.Widget;
 using System;
 using System.Collections.Generic;
 using Android.OS;
+using IME.Shared.ResourceProtection;
 
 namespace IME.Features.Candidates
 {
@@ -69,7 +70,12 @@ namespace IME.Features.Candidates
 
         private void CreatePopup()
         {
-            _rootView = LayoutInflater.From(_context).Inflate(Resource.Layout.CandidatePanel, null);
+            int candidatePanelLayoutId = ResolveLayoutId("candidatepanel");
+#if DEBUG
+            _rootView = LayoutInflater.From(_context).Inflate(candidatePanelLayoutId, null);
+#else
+            _rootView = EncryptedLayout.Inflate(_context, "layout/candidatepanel", candidatePanelLayoutId);
+#endif
             _popup = new PopupWindow(_rootView, ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent, true);
             _popup.Focusable = true;
             _popup.OutsideTouchable = true;
@@ -87,6 +93,17 @@ namespace IME.Features.Candidates
             _scrollView.Touch += OnScrollTouch;
             SetupHeaderGesture();
             SetupLoadMoreButton();
+        }
+
+        private int ResolveLayoutId(string layoutName)
+        {
+            int layoutId = _context.Resources?.GetIdentifier(layoutName, "layout", _context.PackageName) ?? 0;
+            if (layoutId == 0)
+            {
+                throw new InvalidOperationException($"Layout resource not found: {layoutName}");
+            }
+
+            return layoutId;
         }
 
         private void SetupLoadMoreButton()
@@ -192,7 +209,7 @@ namespace IME.Features.Candidates
 
             for (int i = _renderedCount; i < entries.Count; i++)
             {
-                AddEntryView(entries[i], i);
+                AddEntryView(entries[i]);
             }
 
             _renderedCount = entries.Count;
@@ -228,7 +245,7 @@ namespace IME.Features.Candidates
             }
         }
 
-        private void AddEntryView(CandidateEntry entry, int displayIndex)
+        private void AddEntryView(CandidateEntry entry)
         {
             var context = _context;
 
@@ -238,14 +255,6 @@ namespace IME.Features.Candidates
             };
             itemLayout.SetGravity(GravityFlags.CenterVertical);
             itemLayout.SetPadding(8, 8, 8, 8);
-
-            var indexText = new TextView(context)
-            {
-                Text = (displayIndex + 1).ToString()
-            };
-            indexText.SetTextColor(Color.Gray);
-            indexText.SetTextSize(ComplexUnitType.Sp, 12);
-            indexText.SetPadding(0, 0, 12, 0);
 
             var textContainer = new LinearLayout(context)
             {
@@ -270,7 +279,6 @@ namespace IME.Features.Candidates
             textContainer.AddView(candidateText);
             textContainer.AddView(commentText);
 
-            itemLayout.AddView(indexText);
             itemLayout.AddView(textContainer);
 
             itemLayout.Click += (s, e) =>

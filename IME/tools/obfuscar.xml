@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<Obfuscator>
+  <Var name="OutPath" value="bin\\Release\\net8.0-android\\publish\\obfuscated" />
+  <Var name="HidePrivateApi" value="true" />
+  <Var name="KeepPublicApi" value="false" />
+  <Var name="RenameProperties" value="true" />
+  <Var name="RenameEvents" value="true" />
+  <Var name="UseUnicodeNames" value="false" />
+  <Var name="StringEncryption" value="true" />
+
+  <Module file="bin\\Release\\net8.0-android\\publish\\IME.dll">
+    <SkipType name="IME.Features.Settings.MainActivity" />
+    <SkipType name="IME.Features.Settings.SettingsActivity" />
+    <SkipType name="IME.Features.Settings.KamiVipActivity" />
+    <SkipType name="IME.Features.Prediction.PredictionManagerActivity" />
+    <SkipType name="IME.Features.Shortcuts.ShortcutManagerActivity" />
+    <SkipType name="IME.Features.Keyboard.QuickSymbolEditorActivity" />
+    <SkipType name="IME.Features.Input.Ime" />
+  </Module>
+</Obfuscator>

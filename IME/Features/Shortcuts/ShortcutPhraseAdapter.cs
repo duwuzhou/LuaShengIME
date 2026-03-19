@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Android.App;
 using Android.Views;
 using Android.Widget;
+using IME.Shared.ResourceProtection;
 
 namespace IME.Features.Shortcuts;
 
@@ -30,7 +31,15 @@ internal sealed class ShortcutPhraseAdapter : BaseAdapter<string>
 
     public override View GetView(int position, View convertView, ViewGroup parent)
     {
-        View row = convertView ?? _activity.LayoutInflater.Inflate(Resource.Layout.item_shortcut_phrase, parent, false);
+        View row = convertView;
+        if (row == null)
+        {
+#if DEBUG
+            row = _activity.LayoutInflater.Inflate(Resource.Layout.item_shortcut_phrase, parent, false);
+#else
+            row = EncryptedLayout.Inflate(_activity.LayoutInflater, "layout/item_shortcut_phrase", Resource.Layout.item_shortcut_phrase, parent, false);
+#endif
+        }
         var holder = row.Tag as ViewHolder;
         if (holder == null)
         {

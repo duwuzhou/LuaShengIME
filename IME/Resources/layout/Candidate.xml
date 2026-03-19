@@ -61,11 +61,18 @@
                 android:minHeight="40dp"
                 android:text="&#x66F4;&#x591A;" />
         </LinearLayout>
+    </FrameLayout>
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fillViewport="false"
+        android:scrollbars="none">
 
         <LinearLayout
             android:id="@+id/functionButtonsContainer"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:visibility="visible">
@@ -82,6 +89,6 @@
                 android:layout_height="40dp"
                 android:text="&#x529F;&#x80FD;" />
         </LinearLayout>
-    </FrameLayout>
+    </HorizontalScrollView>
 
 </LinearLayout>

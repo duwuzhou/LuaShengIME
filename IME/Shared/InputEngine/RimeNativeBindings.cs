@@ -847,6 +847,33 @@ namespace IME.Shared.InputEngine
         }
 
         /// <summary>
+        /// 模拟按键序列，作为 process_key 的兼容兜底。
+        /// </summary>
+        public static bool SimulateKeySequence(IntPtr sessionId, string keySequence)
+        {
+            if (_apiPtr == IntPtr.Zero || string.IsNullOrEmpty(keySequence))
+                return false;
+
+            try
+            {
+                IntPtr funcPtr = GetFunctionPointer(ApiOffset.SimulateKeySequence);
+                if (funcPtr != IntPtr.Zero)
+                {
+                    var func = Marshal.GetDelegateForFunctionPointer<SimulateKeySequenceDelegate>(funcPtr);
+                    bool result = func(sessionId, keySequence);
+                    Log.Info("RimeNativeBindings", $"SimulateKeySequence: sessionId={sessionId}, sequence={keySequence}, result={result}");
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("RimeNativeBindings", $"SimulateKeySequence 失败: {ex.Message}");
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// 启动维护模式（强制部署检查）
         /// </summary>
         public static bool StartMaintenance(bool fullCheck)
@@ -1103,6 +1130,9 @@ namespace IME.Shared.InputEngine
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate void CandidateListEndDelegate(IntPtr iterator);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate bool SimulateKeySequenceDelegate(IntPtr sessionId, [MarshalAs(UnmanagedType.LPUTF8Str)] string keySequence);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate IntPtr FindModuleDelegate([MarshalAs(UnmanagedType.LPUTF8Str)] string moduleName);

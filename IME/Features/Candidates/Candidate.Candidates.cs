@@ -185,8 +185,15 @@ namespace IME.Features.Candidates
             }
             else
             {
-                SetInputPreview(remaining);
-                SetCandidates(_inputEngine.GetCandidates());
+                if (_keyboardHandler != null)
+                {
+                    _keyboardHandler.UpdateChineseCandidates();
+                }
+                else
+                {
+                    SetInputPreview(remaining);
+                    SetCandidates(_inputEngine.GetCandidates());
+                }
             }
         }
 
@@ -257,13 +264,19 @@ namespace IME.Features.Candidates
 
             for (int i = 0; i < candidates.Count; i++)
             {
+                string candidateText = candidates[i] ?? string.Empty;
+                if (ShouldHideNumericCandidates() && IsNumericLikeCandidate(candidateText))
+                {
+                    continue;
+                }
+
                 string comment = string.Empty;
                 if (comments != null && i < comments.Count)
                 {
                     comment = comments[i] ?? string.Empty;
                 }
 
-                _candidateEntries.Add(new CandidateEntry(candidates[i], comment, pageIndex, i));
+                _candidateEntries.Add(new CandidateEntry(candidateText, comment, pageIndex, i));
             }
         }
 
@@ -306,6 +319,46 @@ namespace IME.Features.Candidates
             {
                 return new List<CandidateEntry>(_candidateEntries);
             }
+        }
+
+        private bool ShouldHideNumericCandidates()
+        {
+            return _keyboardHandler != null
+                && _keyboardHandler.IsT9Mode
+                && !_keyboardHandler.GetAsciiMode();
+        }
+
+        private static bool IsNumericLikeCandidate(string? text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return false;
+            }
+
+            bool hasDigit = false;
+            for (int i = 0; i < text.Length; i++)
+            {
+                char ch = text[i];
+                if (char.IsDigit(ch))
+                {
+                    hasDigit = true;
+                    continue;
+                }
+
+                if (char.IsLetter(ch))
+                {
+                    return false;
+                }
+
+                if (char.IsWhiteSpace(ch) || char.IsPunctuation(ch) || char.IsSymbol(ch))
+                {
+                    continue;
+                }
+
+                return false;
+            }
+
+            return hasDigit;
         }
     }
 }

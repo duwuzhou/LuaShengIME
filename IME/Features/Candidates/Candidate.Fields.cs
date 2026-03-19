@@ -97,7 +97,8 @@ namespace IME.Features.Candidates
 
             public void Bind(CandidateEntry entry, int displayIndex)
             {
-                IndexText.Text = (displayIndex + 1).ToString();
+                IndexText.Text = string.Empty;
+                IndexText.Visibility = ViewStates.Gone;
                 CandidateText.Text = entry.Text ?? string.Empty;
             }
         }

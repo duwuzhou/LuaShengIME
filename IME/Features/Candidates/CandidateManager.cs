@@ -22,6 +22,7 @@ public class CandidateManager
     private LocalUserLexiconStore? _localLexiconStore;
 
     private string _lastRenderedComposing = string.Empty;
+    private string _lastRenderedRawComposing = string.Empty;
     private int _lastRenderedCandidatesHash;
     private int _lastRenderedCommentsHash;
     private int _lastRenderedExtrasHash;
@@ -52,7 +53,12 @@ public class CandidateManager
         Log.Info(Tag, "Input engine updated.");
     }
 
-    public void UpdateChineseCandidates(IInputEngine engine)
+    public void UpdateChineseCandidates(IInputEngine engine, string? displayComposingOverride = null)
+    {
+        UpdateChineseCandidates(engine, displayComposingOverride, hideNumericCandidates: false);
+    }
+
+    public void UpdateChineseCandidates(IInputEngine engine, string? displayComposingOverride, bool hideNumericCandidates)
     {
         if (_candidateView == null || engine == null)
         {
@@ -62,20 +68,35 @@ public class CandidateManager
         try
         {
             string composingText = engine.GetComposingText() ?? string.Empty;
+            string displayComposingText = displayComposingOverride is null
+                ? composingText
+                : displayComposingOverride;
             List<string> candidates = engine.GetCandidates() ?? new List<string>();
             List<string> comments = engine.GetCandidateComments() ?? new List<string>();
 
-            List<CandidateEntry> extras = GetCachedLocalExtras(composingText) ?? new List<CandidateEntry>();
-            if (extras.Count == 0 && !string.IsNullOrWhiteSpace(composingText))
+            if (hideNumericCandidates)
             {
-                QueueLocalExtrasFetch(composingText, candidates);
+                if (displayComposingOverride is null && IsNumericLikeText(composingText))
+                {
+                    displayComposingText = string.Empty;
+                }
+            }
+
+            List<CandidateEntry> extras = GetCachedLocalExtras(composingText) ?? new List<CandidateEntry>();
+            bool shouldQueueLocalExtras = extras.Count == 0
+                                          && !string.IsNullOrWhiteSpace(composingText)
+                                          && !(hideNumericCandidates && displayComposingOverride is not null);
+            if (shouldQueueLocalExtras)
+            {
+                QueueLocalExtrasFetch(composingText, candidates, displayComposingOverride, hideNumericCandidates);
             }
 
             int candidatesHash = ComputeStringListHash(candidates);
             int commentsHash = ComputeStringListHash(comments);
             int extrasHash = ComputeEntryListHash(extras);
 
-            if (string.Equals(_lastRenderedComposing, composingText, StringComparison.Ordinal)
+            if (string.Equals(_lastRenderedComposing, displayComposingText, StringComparison.Ordinal)
+                && string.Equals(_lastRenderedRawComposing, composingText, StringComparison.Ordinal)
                 && _lastRenderedCandidatesHash == candidatesHash
                 && _lastRenderedCommentsHash == commentsHash
                 && _lastRenderedExtrasHash == extrasHash)
@@ -83,10 +104,11 @@ public class CandidateManager
                 return;
             }
 
-            _candidateView.SetInputPreview(composingText);
+            _candidateView.SetInputPreview(displayComposingText);
             _candidateView.SetCandidatesWithExtras(candidates, comments, extras);
 
-            _lastRenderedComposing = composingText;
+            _lastRenderedComposing = displayComposingText;
+            _lastRenderedRawComposing = composingText;
             _lastRenderedCandidatesHash = candidatesHash;
             _lastRenderedCommentsHash = commentsHash;
             _lastRenderedExtrasHash = extrasHash;
@@ -183,7 +205,11 @@ public class CandidateManager
         return null;
     }
 
-    private void QueueLocalExtrasFetch(string composingText, List<string> engineCandidates)
+    private void QueueLocalExtrasFetch(
+        string composingText,
+        List<string> engineCandidates,
+        string? displayComposingOverride,
+        bool hideNumericCandidates)
     {
         if (_localLexiconStore == null || string.IsNullOrWhiteSpace(composingText))
         {
@@ -236,7 +262,7 @@ public class CandidateManager
                         return;
                     }
 
-                    UpdateChineseCandidates(_inputEngine);
+                    UpdateChineseCandidates(_inputEngine, displayComposingOverride, hideNumericCandidates);
                 });
             }, TaskScheduler.Default);
     }
@@ -290,6 +316,7 @@ public class CandidateManager
         }
 
         _lastRenderedComposing = string.Empty;
+        _lastRenderedRawComposing = string.Empty;
         _lastRenderedCandidatesHash = 0;
         _lastRenderedCommentsHash = 0;
         _lastRenderedExtrasHash = 0;
@@ -338,5 +365,38 @@ public class CandidateManager
 
             return (hash * 31) + values.Count;
         }
+    }
+
+    private static bool IsNumericLikeText(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return false;
+        }
+
+        bool hasDigit = false;
+        for (int i = 0; i < text.Length; i++)
+        {
+            char ch = text[i];
+            if (char.IsDigit(ch))
+            {
+                hasDigit = true;
+                continue;
+            }
+
+            if (char.IsLetter(ch))
+            {
+                return false;
+            }
+
+            if (char.IsWhiteSpace(ch) || char.IsPunctuation(ch) || char.IsSymbol(ch))
+            {
+                continue;
+            }
+
+            return false;
+        }
+
+        return hasDigit;
     }
 }

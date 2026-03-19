@@ -65,10 +65,18 @@ public class CharacterInputHandler
         if (isT9Mode && keyChar >= '2' && keyChar <= '9')
         {
             var engine = _engineHost.CurrentEngine;
-            if (engine?.ProcessKey(keyCode) == true)
+            if (engine != null)
             {
+                if (engine.ProcessKey(keyCode))
+                {
+                    return;
+                }
+
+                // 在中文 T9 模式下，按键应由引擎消费；引擎拒绝时不回落直出数字，
+                // 否则会在候选流程中混入错误字符。
                 return;
             }
+
             _connection.CommitText(keyChar.ToString(), 1);
             _engineHost.NotifyCommittedText(keyChar.ToString(), false);
             return;

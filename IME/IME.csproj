@@ -21,6 +21,11 @@
         <TrimMode>partial</TrimMode>
         <RunObfuscator>false</RunObfuscator>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+        <AndroidFastDeploymentType>None</AndroidFastDeploymentType>
+        <AndroidUseSharedRuntime>false</AndroidUseSharedRuntime>
+    </PropertyGroup>
     <ItemGroup>
       <Compile Remove="IME\**" />
     </ItemGroup>

@@ -207,7 +207,7 @@ namespace IME.Features.Settings
         private void SaveKamiRedeemResult(int userId, string vipExpiresAt)
         {
             KamiVipConfig.SaveVipState(this, userId, vipExpiresAt);
-            KamiVipConfig.MarkVerifiedNow(this);
+            KamiVipConfig.ClearLastVerifyAtUtc(this);
         }
 
         private void RefreshVipStatusText()

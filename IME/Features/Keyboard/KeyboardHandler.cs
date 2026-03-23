@@ -46,6 +46,7 @@ public class KeyboardHandler
     private readonly List<string> _t9SelectedPinyins = new();
     private bool _t9PinyinEventBound;
     private GnType _currentGnType = GnType.keyborad;
+    private Gn1PanelMode _gn1PanelMode = Gn1PanelMode.Home;
     private string _gn1CurrentCategory = string.Empty;
     private List<string> _gn1CurrentItems = new();
 
@@ -105,7 +106,7 @@ public class KeyboardHandler
 
         _gn1 = new Gn1(_imeService, null);
         _gn1.SetImeService(_imeService);
-        _gn1.RestoreState(_gn1CurrentCategory, _gn1CurrentItems);
+        _gn1.RestoreState(_gn1PanelMode, _gn1CurrentCategory, _gn1CurrentItems);
         _gn1.StateChanged += HandleGn1StateChanged;
         _gn1.Visibility = ViewStates.Gone;
         _linearLayout.AddView(_gn1);
@@ -1196,9 +1197,13 @@ public class KeyboardHandler
 
     private void HandleGn1StateChanged(object? sender, Gn1StateChangedEventArgs e)
     {
+        _gn1PanelMode = e.PanelMode;
         _gn1CurrentCategory = e.CurrentCategory ?? string.Empty;
         _gn1CurrentItems = e.CurrentItems.Count > 0
             ? new List<string>(e.CurrentItems)
             : new List<string>();
     }
 }
+
+
+

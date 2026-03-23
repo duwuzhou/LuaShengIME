@@ -122,6 +122,13 @@ public static class KamiVipConfig
         editor.Apply();
     }
 
+    public static void ClearLastVerifyAtUtc(Context context)
+    {
+        using var editor = GetPrefs(context).Edit();
+        editor.Remove(KeyKamiLastVerifyAtUtc);
+        editor.Apply();
+    }
+
     public static string GetOrCreateDeviceUid(Context context)
     {
         string existing = GetStoredDeviceUid(context);

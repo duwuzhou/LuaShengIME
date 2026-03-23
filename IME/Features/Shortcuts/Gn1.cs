@@ -1,4 +1,4 @@
-using Android.Content;
+﻿using Android.Content;
 using Android.Graphics;
 using Android.OS;
 using Android.Util;
@@ -16,18 +16,21 @@ namespace IME.Features.Shortcuts
 {
     public sealed class Gn1StateChangedEventArgs : EventArgs
     {
-        public Gn1StateChangedEventArgs(string currentCategory, IReadOnlyList<string> currentItems)
+        public Gn1StateChangedEventArgs(Gn1PanelMode panelMode, string currentCategory, IReadOnlyList<string> currentItems)
         {
+            PanelMode = panelMode;
             CurrentCategory = currentCategory ?? string.Empty;
             CurrentItems = currentItems ?? Array.Empty<string>();
         }
+
+        public Gn1PanelMode PanelMode { get; }
 
         public string CurrentCategory { get; }
 
         public IReadOnlyList<string> CurrentItems { get; }
     }
 
-    internal enum Gn1PanelMode
+    public enum Gn1PanelMode
     {
         Home,
         Shortcuts,
@@ -100,8 +103,9 @@ namespace IME.Features.Shortcuts
             _imeService = imeService;
         }
 
-        public void RestoreState(string? currentCategory, IReadOnlyList<string>? currentItems)
+        public void RestoreState(Gn1PanelMode panelMode, string? currentCategory, IReadOnlyList<string>? currentItems)
         {
+            _panelMode = panelMode;
             _currentCategory = currentCategory ?? string.Empty;
             _currentItems = CanUseCustomShortcuts()
                 ? currentItems?.Where(item => !string.IsNullOrWhiteSpace(item)).ToList() ?? new List<string>()
@@ -653,7 +657,7 @@ namespace IME.Features.Shortcuts
 
         private void NotifyStateChanged()
         {
-            StateChanged?.Invoke(this, new Gn1StateChangedEventArgs(_currentCategory, _currentItems.ToArray()));
+            StateChanged?.Invoke(this, new Gn1StateChangedEventArgs(_panelMode, _currentCategory, _currentItems.ToArray()));
         }
 
         private bool CanUseCustomShortcuts()
@@ -662,3 +666,7 @@ namespace IME.Features.Shortcuts
         }
     }
 }
+
+
+
+

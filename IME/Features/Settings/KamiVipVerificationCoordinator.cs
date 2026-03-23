@@ -178,6 +178,8 @@ internal static class KamiVipVerificationCoordinator
                 bool isActive = result?.IsActive ?? result?.Active ?? true;
                 string vipExpiresAt = result?.VipExpiresAt ?? string.Empty;
                 int resolvedUserId = result?.UserId ?? userId;
+                string previous = KamiVipConfig.GetStoredVipExpiresAt(context);
+                int previousUserId = KamiVipConfig.GetStoredUserId(context);
 
                 KamiVipConfig.MarkVerifiedNow(context);
 
@@ -190,10 +192,9 @@ internal static class KamiVipVerificationCoordinator
 
                 if (!string.IsNullOrWhiteSpace(vipExpiresAt))
                 {
-                    string previous = KamiVipConfig.GetStoredVipExpiresAt(context);
                     KamiVipConfig.SaveVipState(context, resolvedUserId, vipExpiresAt);
                     bool changed = !string.Equals(previous, vipExpiresAt, StringComparison.Ordinal)
-                                   || KamiVipConfig.GetStoredUserId(context) != resolvedUserId;
+                                   || previousUserId != resolvedUserId;
                     Log.Info(Tag, $"Remote verify success. trigger={trigger}, changed={changed}, expiresAt={vipExpiresAt}");
                     return changed;
                 }
@@ -203,6 +204,7 @@ internal static class KamiVipVerificationCoordinator
             }
 
             if (response.StatusCode == HttpStatusCode.Forbidden
+                || response.StatusCode == HttpStatusCode.NotFound
                 || response.StatusCode == HttpStatusCode.Conflict
                 || response.StatusCode == HttpStatusCode.Gone)
             {
@@ -212,8 +214,7 @@ internal static class KamiVipVerificationCoordinator
                 return true;
             }
 
-            if (response.StatusCode == HttpStatusCode.NotFound
-                || response.StatusCode == HttpStatusCode.MethodNotAllowed
+            if (response.StatusCode == HttpStatusCode.MethodNotAllowed
                 || response.StatusCode == HttpStatusCode.NotImplemented)
             {
                 _verifyEndpointUnavailableInProcess = true;

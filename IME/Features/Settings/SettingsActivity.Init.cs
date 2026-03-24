@@ -37,6 +37,7 @@ namespace IME.Features.Settings
             _btnResetTapFallback = FindViewById<Button>(Resource.Id.btn_reset_tap_fallback);
             _editSimulatedTypingText = FindViewById<EditText>(Resource.Id.edit_simulated_typing_text);
             _spinnerSimulatedTypingSpeed = FindViewById<Spinner>(Resource.Id.spinner_simulated_typing_speed);
+            _spinnerSimulatedTypingStartDelay = FindViewById<Spinner>(Resource.Id.spinner_simulated_typing_start_delay);
             _btnSaveSimulatedTypingText = FindViewById<Button>(Resource.Id.btn_save_simulated_typing_text);
             _btnClearSimulatedTypingText = FindViewById<Button>(Resource.Id.btn_clear_simulated_typing_text);
 
@@ -69,6 +70,10 @@ namespace IME.Features.Settings
             var simulatedTypingSpeedAdapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleSpinnerItem, _simulatedTypingSpeedDisplay);
             simulatedTypingSpeedAdapter.SetDropDownViewResource(Android.Resource.Layout.SimpleSpinnerDropDownItem);
             _spinnerSimulatedTypingSpeed.Adapter = simulatedTypingSpeedAdapter;
+
+            var simulatedTypingStartDelayAdapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleSpinnerItem, _simulatedTypingStartDelayDisplay);
+            simulatedTypingStartDelayAdapter.SetDropDownViewResource(Android.Resource.Layout.SimpleSpinnerDropDownItem);
+            _spinnerSimulatedTypingStartDelay.Adapter = simulatedTypingStartDelayAdapter;
         }
 
         private void InitializeLexiconServices()
@@ -171,6 +176,19 @@ namespace IME.Features.Settings
             {
                 _spinnerSimulatedTypingSpeed.SetSelection(simulatedTypingSpeedIndex);
             }
+
+            int savedSimulatedTypingStartDelay = prefs.GetInt(KeySimulatedTypingStartDelaySeconds, DefaultSimulatedTypingStartDelaySeconds);
+            int simulatedTypingStartDelayIndex = _simulatedTypingStartDelaySeconds.IndexOf(savedSimulatedTypingStartDelay);
+            if (simulatedTypingStartDelayIndex < 0)
+            {
+                simulatedTypingStartDelayIndex = _simulatedTypingStartDelaySeconds.IndexOf(DefaultSimulatedTypingStartDelaySeconds);
+            }
+
+            if (simulatedTypingStartDelayIndex >= 0)
+            {
+                _spinnerSimulatedTypingStartDelay.SetSelection(simulatedTypingStartDelayIndex);
+            }
+
             UpdatePredictionRoundsEnabled();
         }
 

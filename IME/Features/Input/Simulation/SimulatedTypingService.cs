@@ -47,6 +47,7 @@ internal sealed class SimulatedTypingService : IDisposable
             return;
         }
 
+        int startDelayMs = SettingsActivity.GetSimulatedTypingStartDelayMs(_imeService);
         int keyDelayMs = SettingsActivity.GetSimulatedTypingSpeedMs(_imeService);
         int candidateDelayMs = Math.Max(48, keyDelayMs * 2);
         List<(string Text, bool ShouldSendAfter)> segments = BuildSegments(text, sendAfterCommit);
@@ -57,6 +58,15 @@ internal sealed class SimulatedTypingService : IDisposable
 
         try
         {
+            if (startDelayMs > 0)
+            {
+                await DelayAsync(startDelayMs).ConfigureAwait(false);
+                if (!IsCurrentRequest(requestVersion))
+                {
+                    return;
+                }
+            }
+
             PinyinReverseLookup lookup = await GetLookupAsync().ConfigureAwait(false);
             for (int segmentIndex = 0; segmentIndex < segments.Count; segmentIndex++)
             {

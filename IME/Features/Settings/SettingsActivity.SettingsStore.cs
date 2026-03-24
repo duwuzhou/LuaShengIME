@@ -232,6 +232,22 @@ namespace IME.Features.Settings
             return value;
         }
 
+
+        public static int GetSimulatedTypingStartDelayMs(Context context)
+        {
+            int seconds = GetPrefs(context).GetInt(KeySimulatedTypingStartDelaySeconds, DefaultSimulatedTypingStartDelaySeconds);
+            if (seconds < 0)
+            {
+                return 0;
+            }
+
+            if (seconds > 60)
+            {
+                seconds = 60;
+            }
+
+            return seconds * 1000;
+        }
         public static string GetSimulatedTypingText(Context context)
         {
             return GetPrefs(context).GetString(KeySimulatedTypingText, string.Empty) ?? string.Empty;

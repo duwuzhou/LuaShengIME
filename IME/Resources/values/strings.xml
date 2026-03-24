@@ -84,9 +84,10 @@
 
     <string name="settings_enter_action_label">&#x56DE;&#x8F66;&#x884C;&#x4E3A;</string>
     <string name="settings_simulated_typing_title">&#x6A21;&#x62DF;&#x6253;&#x5B57;</string>
-    <string name="settings_simulated_typing_hint">&#x5728;&#x8FD9;&#x91CC;&#x4FDD;&#x5B58;&#x8981;&#x6A21;&#x62DF;&#x8F93;&#x5165;&#x7684;&#x6587;&#x672C;&#xFF0C;&#x529F;&#x80FD;&#x9762;&#x677F;&#x4F1A;&#x76F4;&#x63A5;&#x8BFB;&#x53D6;&#x8FD9;&#x6BB5;&#x5185;&#x5BB9;&#xFF0C;&#x6362;&#x884C;&#x4F1A;&#x76F4;&#x63A5;&#x53D1;&#x9001;&#x5F53;&#x524D;&#x6BB5;&#x843D;</string>
+    <string name="settings_simulated_typing_hint">&#x5728;&#x8FD9;&#x91CC;&#x4FDD;&#x5B58;&#x8981;&#x6A21;&#x62DF;&#x8F93;&#x5165;&#x7684;&#x6587;&#x672C;&#xFF0C;&#x529F;&#x80FD;&#x9762;&#x677F;&#x4F1A;&#x76F4;&#x63A5;&#x8BFB;&#x53D6;&#x8FD9;&#x6BB5;&#x5185;&#x5BB9;&#xFF0C;&#x6362;&#x884C;&#x4F1A;&#x76F4;&#x63A5;&#x53D1;&#x9001;&#x5F53;&#x524D;&#x6BB5;&#x843D;&#xFF0C;&#x4E5F;&#x53EF;&#x4EE5;&#x5728;&#x5F00;&#x59CB;&#x524D;&#x5148;&#x7B49;&#x5F85;&#x51E0;&#x79D2;</string>
     <string name="settings_simulated_typing_input_hint">&#x8BF7;&#x8F93;&#x5165;&#x6A21;&#x62DF;&#x6587;&#x672C;</string>
     <string name="settings_simulated_typing_speed_label">&#x6A21;&#x62DF;&#x901F;&#x5EA6;</string>
+    <string name="settings_simulated_typing_start_delay_label">&#x5F00;&#x59CB;&#x524D;&#x7B49;&#x5F85;</string>
     <string name="settings_simulated_typing_save">&#x4FDD;&#x5B58;&#x6587;&#x672C;</string>
     <string name="settings_simulated_typing_clear">&#x6E05;&#x7A7A;&#x6587;&#x672C;</string>
     <string name="settings_tap_fallback_level_label">&#x5FEB;&#x901F;&#x70B9;&#x51FB;&#x8865;&#x507F;&#x7075;&#x654F;&#x5EA6;</string>

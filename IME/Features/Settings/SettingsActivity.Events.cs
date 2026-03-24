@@ -135,6 +135,16 @@ namespace IME.Features.Settings
                 }
             };
 
+            _spinnerSimulatedTypingStartDelay.ItemSelected += (sender, e) =>
+            {
+                if (e.Position >= 0 && e.Position < _simulatedTypingStartDelaySeconds.Count)
+                {
+                    int seconds = _simulatedTypingStartDelaySeconds[e.Position];
+                    SaveSetting(KeySimulatedTypingStartDelaySeconds, seconds);
+                    ShowToast(seconds <= 0 ? "模拟打字已设置为立即开始" : $"模拟打字将等待 {seconds} 秒后开始");
+                }
+            };
+
 
             if (_editTapFallbackMaxDurationMs != null)
             {

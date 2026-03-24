@@ -31,10 +31,12 @@ namespace IME.Features.Settings
         private const string KeyT9Enabled = "key_t9_enabled";
         private const string KeySimulatedTypingText = "key_simulated_typing_text";
         private const string KeySimulatedTypingSpeedMs = "key_simulated_typing_speed_ms";
+        private const string KeySimulatedTypingStartDelaySeconds = "key_simulated_typing_start_delay_seconds";
 
         private const int DefaultTapFallbackMaxDurationMs = 180;
         private const int DefaultTapFallbackMoveSlopDp = 14;
         private const int DefaultSimulatedTypingSpeedMs = 48;
+        private const int DefaultSimulatedTypingStartDelaySeconds = 0;
 
         public const int EnterActionNewLine = 0;
         public const int EnterActionSend = 1;
@@ -65,6 +67,7 @@ namespace IME.Features.Settings
         private Button _btnKamiVipPage;
         private EditText _editSimulatedTypingText;
         private Spinner _spinnerSimulatedTypingSpeed;
+        private Spinner _spinnerSimulatedTypingStartDelay;
         private Button _btnSaveSimulatedTypingText;
         private Button _btnClearSimulatedTypingText;
         private bool _suppressTapFallbackTextEvents;
@@ -88,5 +91,7 @@ namespace IME.Features.Settings
         private readonly List<string> _enterActionDisplay = new List<string> { "\u6362\u884c", "ImeAction.Send" };
         private readonly List<int> _simulatedTypingSpeedMs = new List<int> { 24, 36, 48, 72, 96, 144 };
         private readonly List<string> _simulatedTypingSpeedDisplay = new List<string> { "24 ms（极快）", "36 ms（很快）", "48 ms（标准）", "72 ms（偏慢）", "96 ms（较慢）", "144 ms（很慢）" };
+        private readonly List<int> _simulatedTypingStartDelaySeconds = new List<int> { 0, 1, 2, 3, 5, 10 };
+        private readonly List<string> _simulatedTypingStartDelayDisplay = new List<string> { "0 秒（立即）", "1 秒", "2 秒", "3 秒", "5 秒", "10 秒" };
     }
 }

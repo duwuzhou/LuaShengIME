@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using Android.App;
@@ -305,6 +305,30 @@ namespace IME.Features.Settings
                 var intent = new Intent(this, typeof(ShortcutManagerActivity));
                 StartActivity(intent);
             };
+
+            if (_btnSaveSimulatedTypingText != null)
+            {
+                _btnSaveSimulatedTypingText.Click += (sender, e) =>
+                {
+                    string textValue = _editSimulatedTypingText?.Text?.Trim() ?? string.Empty;
+                    SaveSetting(KeySimulatedTypingText, textValue);
+                    ShowToast(string.IsNullOrEmpty(textValue) ? "已清空模拟文本" : "已保存模拟文本");
+                };
+            }
+
+            if (_btnClearSimulatedTypingText != null)
+            {
+                _btnClearSimulatedTypingText.Click += (sender, e) =>
+                {
+                    if (_editSimulatedTypingText != null)
+                    {
+                        _editSimulatedTypingText.Text = string.Empty;
+                    }
+
+                    SaveSetting(KeySimulatedTypingText, string.Empty);
+                    ShowToast("已清空模拟文本");
+                };
+            }
 
         }
 

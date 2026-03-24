@@ -1,4 +1,4 @@
-﻿using Android.Content;
+using Android.Content;
 
 namespace IME.Features.Settings
 {
@@ -215,6 +215,10 @@ namespace IME.Features.Settings
             var editor = GetPrefs(context).Edit();
             editor.PutBoolean(KeyT9Enabled, enabled);
             editor.Apply();
+        }
+        public static string GetSimulatedTypingText(Context context)
+        {
+            return GetPrefs(context).GetString(KeySimulatedTypingText, string.Empty) ?? string.Empty;
         }
     }
 }

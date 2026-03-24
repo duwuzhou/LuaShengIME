@@ -19,7 +19,16 @@
     <string name="function_home_hint">&#x8BF7;&#x9009;&#x62E9;&#x8981;&#x4F7F;&#x7528;&#x7684;&#x529F;&#x80FD;&#x9762;&#x677F;</string>
     <string name="function_home_shortcuts">&#x5FEB;&#x6377;&#x77ED;&#x8BED;</string>
     <string name="function_home_clipboard">&#x526A;&#x8D34;&#x677F;</string>
+    <string name="function_home_simulated_typing">&#x6A21;&#x62DF;&#x6253;&#x5B57;</string>
     <string name="function_clipboard_hint">&#x5E38;&#x7528;&#x7684;&#x590D;&#x5236;&#x3001;&#x526A;&#x5207;&#x3001;&#x7C98;&#x8D34;&#x4E0E;&#x5168;&#x9009;&#x64CD;&#x4F5C;</string>
+    <string name="function_simulated_typing_hint">&#x8F93;&#x5165;&#x6587;&#x672C;&#x540E;&#x53EF;&#x7528;&#x62FC;&#x97F3;&#x5019;&#x9009;&#x6A21;&#x62DF;&#x8F93;&#x5165;&#xFF0C;&#x4E5F;&#x53EF;&#x76F4;&#x63A5;&#x63D0;&#x4EA4;</string>
+    <string name="function_simulated_typing_input_hint">&#x8BF7;&#x8F93;&#x5165;&#x8981;&#x6A21;&#x62DF;&#x7684;&#x6587;&#x672C;</string>
+    <string name="function_simulated_typing_start">&#x6A21;&#x62DF;&#x8F93;&#x5165;</string>
+    <string name="function_simulated_typing_start_send">&#x6A21;&#x62DF;&#x540E;&#x53D1;&#x9001;</string>
+    <string name="function_simulated_typing_commit">&#x76F4;&#x63A5;&#x63D0;&#x4EA4;</string>
+    <string name="function_simulated_typing_clear">&#x6E05;&#x7A7A;</string>
+    <string name="function_simulated_typing_open_settings">&#x6253;&#x5F00;&#x8BBE;&#x7F6E;</string>
+    <string name="function_simulated_typing_empty">&#x8BF7;&#x5148;&#x5728;&#x8BBE;&#x7F6E;&#x4E2D;&#x586B;&#x5199;&#x6A21;&#x62DF;&#x6587;&#x672C;</string>
     <string name="function_back_to_home">&#x8FD4;&#x56DE;&#x9009;&#x62E9;</string>
     <string name="function_shortcut_random">&#x968F;&#x673A;&#x77ED;&#x8BED;</string>
     <string name="function_msg_no_categories">&#x6682;&#x65E0;&#x77ED;&#x8BED;&#x5206;&#x7EC4;</string>
@@ -74,6 +83,11 @@
     <string name="settings_backspace_long_press_delay_label">&#x957F;&#x6309;&#x5220;&#x9664;&#x89E6;&#x53D1;&#x65F6;&#x95F4;&#xFF08;&#x542B;&#x65E0;&#x62FC;&#x97F3;&#x72B6;&#x6001;&#xFF09;</string>
 
     <string name="settings_enter_action_label">&#x56DE;&#x8F66;&#x884C;&#x4E3A;</string>
+    <string name="settings_simulated_typing_title">&#x6A21;&#x62DF;&#x6253;&#x5B57;</string>
+    <string name="settings_simulated_typing_hint">&#x5728;&#x8FD9;&#x91CC;&#x4FDD;&#x5B58;&#x8981;&#x6A21;&#x62DF;&#x8F93;&#x5165;&#x7684;&#x6587;&#x672C;&#xFF0C;&#x529F;&#x80FD;&#x9762;&#x677F;&#x4F1A;&#x76F4;&#x63A5;&#x8BFB;&#x53D6;&#x8FD9;&#x6BB5;&#x5185;&#x5BB9;</string>
+    <string name="settings_simulated_typing_input_hint">&#x8BF7;&#x8F93;&#x5165;&#x6A21;&#x62DF;&#x6587;&#x672C;</string>
+    <string name="settings_simulated_typing_save">&#x4FDD;&#x5B58;&#x6587;&#x672C;</string>
+    <string name="settings_simulated_typing_clear">&#x6E05;&#x7A7A;&#x6587;&#x672C;</string>
     <string name="settings_tap_fallback_level_label">&#x5FEB;&#x901F;&#x70B9;&#x51FB;&#x8865;&#x507F;&#x7075;&#x654F;&#x5EA6;</string>
     <string name="settings_tap_fallback_label">&#x5FEB;&#x901F;&#x70B9;&#x51FB;&#x8865;&#x507F;</string>
     <string name="settings_tap_fallback_duration_label">&#x6700;&#x5927;&#x65F6;&#x957F;&#xFF08;ms&#xFF09;</string>

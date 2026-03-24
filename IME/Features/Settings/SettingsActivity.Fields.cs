@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Android.Content;
 using Android.Widget;
 using Google.Android.Material.SwitchMaterial;
@@ -29,6 +29,7 @@ namespace IME.Features.Settings
         private const string KeyTapFallbackMaxDurationMs = "key_tap_fallback_max_duration_ms";
         private const string KeyTapFallbackMoveSlopDp = "key_tap_fallback_move_slop_dp";
         private const string KeyT9Enabled = "key_t9_enabled";
+        private const string KeySimulatedTypingText = "key_simulated_typing_text";
 
         private const int DefaultTapFallbackMaxDurationMs = 180;
         private const int DefaultTapFallbackMoveSlopDp = 14;
@@ -60,6 +61,9 @@ namespace IME.Features.Settings
         private EditText _editTapFallbackMoveSlopDp;
         private Button _btnResetTapFallback;
         private Button _btnKamiVipPage;
+        private EditText _editSimulatedTypingText;
+        private Button _btnSaveSimulatedTypingText;
+        private Button _btnClearSimulatedTypingText;
         private bool _suppressTapFallbackTextEvents;
 
         private LocalUserLexiconStore _localLexiconStore;

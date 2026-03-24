@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Android.Content;
 using Android.Util;
 using Android.Widget;
@@ -35,6 +35,9 @@ namespace IME.Features.Settings
             _editTapFallbackMaxDurationMs = FindViewById<EditText>(Resource.Id.edit_tap_fallback_duration_ms);
             _editTapFallbackMoveSlopDp = FindViewById<EditText>(Resource.Id.edit_tap_fallback_move_slop_dp);
             _btnResetTapFallback = FindViewById<Button>(Resource.Id.btn_reset_tap_fallback);
+            _editSimulatedTypingText = FindViewById<EditText>(Resource.Id.edit_simulated_typing_text);
+            _btnSaveSimulatedTypingText = FindViewById<Button>(Resource.Id.btn_save_simulated_typing_text);
+            _btnClearSimulatedTypingText = FindViewById<Button>(Resource.Id.btn_clear_simulated_typing_text);
 
             EnsureKamiViews();
 
@@ -145,6 +148,12 @@ namespace IME.Features.Settings
                 _editTapFallbackMoveSlopDp.Text = tapFallbackMoveSlopDp.ToString();
             }
             _suppressTapFallbackTextEvents = false;
+
+            string simulatedTypingText = prefs.GetString(KeySimulatedTypingText, string.Empty) ?? string.Empty;
+            if (_editSimulatedTypingText != null)
+            {
+                _editSimulatedTypingText.Text = simulatedTypingText;
+            }
 
             UpdatePredictionRoundsEnabled();
         }

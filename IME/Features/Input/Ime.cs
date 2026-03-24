@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using Android.App;
 using Android.Content;
 using Android.InputMethodServices;
@@ -9,6 +9,7 @@ using Android.Widget;
 using IME.Features.Input.Abstractions;
 using IME.Features.Input.Feedback;
 using IME.Features.Input.Handlers;
+using IME.Features.Input.Simulation;
 using IME.Features.Keyboard;
 using IME.Features.Prediction;
 using IME.Features.Settings;
@@ -38,6 +39,7 @@ namespace IME.Features.Input
         private IInputConnectionAdapter? _inputConnection;
         private KeyFeedbackManager? _feedbackManager;
         private PredictionCoordinator? _predictionCoordinator;
+        private SimulatedTypingService? _simulatedTypingService;
         private SecurityCheckResult _securityCheckResult = SecurityCheckResult.Allowed;
 
         private SwordDBHelper? _swordDbHelper;
@@ -48,6 +50,7 @@ namespace IME.Features.Input
 
         public SwordDBHelper _swordDBHelper => _swordDbHelper!;
         public IInputEngine? _currentInputEngine => _engineManager?.CurrentEngine;
+        internal KeyboardHandler? CurrentKeyboardHandler => _keyboardHandler;
 
         public override void OnCreate()
         {
@@ -87,6 +90,7 @@ namespace IME.Features.Input
                     keyboardHandler);
 
                 _predictionCoordinator = new PredictionCoordinator(this, this, keyboardHandler);
+                _simulatedTypingService = new SimulatedTypingService(this);
 
                 InitializeLocalStores();
                 EnsureEngineReady("OnCreate");
@@ -293,6 +297,9 @@ namespace IME.Features.Input
                 _predictionCoordinator?.Cleanup();
                 _predictionCoordinator = null;
 
+                _simulatedTypingService?.Dispose();
+                _simulatedTypingService = null;
+
                 _engineManager?.Dispose();
                 _engineManager = null;
 
@@ -363,6 +370,22 @@ namespace IME.Features.Input
 
             _inputConnection.CommitText(text, newCursorPosition);
             NotifyCommittedText(text, isPredictionCommit);
+        }
+
+        internal void StartSimulatedTyping(string text, bool sendAfterCommit = false)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return;
+            }
+
+            if (_simulatedTypingService == null)
+            {
+                CommitText(text, false);
+                return;
+            }
+
+            _simulatedTypingService.StartTyping(text, sendAfterCommit);
         }
 
         internal bool PerformClipboardAction(ClipboardActionType action)
@@ -714,3 +737,4 @@ namespace IME.Features.Input
         }
     }
 }
+

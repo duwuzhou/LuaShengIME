@@ -1,4 +1,4 @@
-﻿using Android.Content;
+using Android.Content;
 using Android.Graphics;
 using Android.OS;
 using Android.Util;
@@ -34,7 +34,8 @@ namespace IME.Features.Shortcuts
     {
         Home,
         Shortcuts,
-        Clipboard
+        Clipboard,
+        SimulatedTyping
     }
 
     public class Gn1 : LinearLayout
@@ -135,6 +136,12 @@ namespace IME.Features.Shortcuts
             RenderPanel();
         }
 
+        private void ShowSimulatedTypingPanel()
+        {
+            _panelMode = Gn1PanelMode.SimulatedTyping;
+            RenderPanel();
+        }
+
         private void RenderPanel()
         {
             _layoutLeft.RemoveAllViews();
@@ -151,6 +158,9 @@ namespace IME.Features.Shortcuts
                 case Gn1PanelMode.Clipboard:
                     RenderClipboardPanel();
                     break;
+                case Gn1PanelMode.SimulatedTyping:
+                    RenderSimulatedTypingPanel();
+                    break;
             }
 
             NotifyStateChanged();
@@ -166,6 +176,7 @@ namespace IME.Features.Shortcuts
 
             _layoutCenter.AddView(CreateActionButton(Resource.String.function_home_shortcuts, (_, _) => ShowShortcutsPanel()));
             _layoutCenter.AddView(CreateActionButton(Resource.String.function_home_clipboard, (_, _) => ShowClipboardPanel()));
+            _layoutCenter.AddView(CreateActionButton(Resource.String.function_home_simulated_typing, (_, _) => ShowSimulatedTypingPanel()));
         }
 
         private void RenderShortcutsPanel()
@@ -228,6 +239,43 @@ namespace IME.Features.Shortcuts
                 CreateCompactPanelButton(Resource.String.clipboard_paste, (_, _) => ExecuteClipboardAction(ClipboardActionType.Paste)),
                 CreateCompactPanelButton(Resource.String.clipboard_select_all, (_, _) => ExecuteClipboardAction(ClipboardActionType.SelectAll))));
             RenderClipboardHistory();
+        }
+
+        private void RenderSimulatedTypingPanel()
+        {
+            _layoutRight.Visibility = ViewStates.Gone;
+            _layoutCenter.SetGravity(GravityFlags.NoGravity);
+
+            string configuredText = IME.Features.Settings.SettingsActivity.GetSimulatedTypingText(Context)?.Trim() ?? string.Empty;
+
+            AddTitleText(_layoutLeft, Resource.String.function_home_simulated_typing);
+            AddMutedText(_layoutLeft, Context.GetString(Resource.String.function_simulated_typing_hint));
+
+            var preview = new TextView(Context)
+            {
+                Text = string.IsNullOrEmpty(configuredText)
+                    ? Context.GetString(Resource.String.function_simulated_typing_empty)
+                    : configuredText,
+                TextSize = 14
+            };
+            preview.SetTextColor(Color.DarkGray);
+            preview.SetBackgroundColor(Color.White);
+            preview.SetPadding(20, 16, 20, 16);
+            preview.LayoutParameters = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MatchParent,
+                ViewGroup.LayoutParams.WrapContent)
+            {
+                TopMargin = 12
+            };
+            _layoutCenter.AddView(preview);
+
+            _layoutCenter.AddView(CreateClipboardActionRow(
+                CreateCompactPanelButton(Resource.String.function_simulated_typing_start, (_, _) => StartSimulatedTyping(configuredText)),
+                CreateCompactPanelButton(Resource.String.function_simulated_typing_commit, (_, _) => CommitSimulatedTypingRaw(configuredText))));
+
+            _layoutCenter.AddView(CreateClipboardActionRow(
+                CreateCompactPanelButton(Resource.String.function_simulated_typing_start_send, (_, _) => StartSimulatedTyping(configuredText, sendAfterCommit: true)),
+                CreateCompactPanelButton(Resource.String.function_simulated_typing_open_settings, (_, _) => OpenSimulatedTypingSettings())));
         }
 
         private void AddTitleText(LinearLayout container, int textId)
@@ -618,6 +666,45 @@ namespace IME.Features.Shortcuts
                     inputConnection.SendKeyEvent(upEvent);
                 }
             }, 50);
+        }
+
+        private void StartSimulatedTyping(string? text, bool sendAfterCommit = false)
+        {
+            if (_imeService == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                Toast.MakeText(Context, Resource.String.function_simulated_typing_empty, ToastLength.Short)?.Show();
+                return;
+            }
+
+            _imeService.StartSimulatedTyping(text, sendAfterCommit);
+        }
+
+        private void CommitSimulatedTypingRaw(string? text)
+        {
+            if (_imeService == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                Toast.MakeText(Context, Resource.String.function_simulated_typing_empty, ToastLength.Short)?.Show();
+                return;
+            }
+
+            _imeService.CommitText(text, false);
+        }
+
+        private void OpenSimulatedTypingSettings()
+        {
+            var intent = new Intent(Context, typeof(IME.Features.Settings.SettingsActivity));
+            intent.AddFlags(ActivityFlags.NewTask);
+            Context.StartActivity(intent);
         }
 
         private void RenderMessage(int textId)

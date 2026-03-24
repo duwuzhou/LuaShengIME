@@ -125,6 +125,16 @@ namespace IME.Features.Settings
                     }
                 }
             };
+            _spinnerSimulatedTypingSpeed.ItemSelected += (sender, e) =>
+            {
+                if (e.Position >= 0 && e.Position < _simulatedTypingSpeedMs.Count)
+                {
+                    int delay = _simulatedTypingSpeedMs[e.Position];
+                    SaveSetting(KeySimulatedTypingSpeedMs, delay);
+                    ShowToast($"模拟打字速度已设置为 {delay} ms");
+                }
+            };
+
 
             if (_editTapFallbackMaxDurationMs != null)
             {

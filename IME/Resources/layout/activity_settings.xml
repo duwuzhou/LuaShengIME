@@ -495,6 +495,21 @@
                 android:padding="@dimen/spacing_md"
                 android:scrollbars="vertical" />
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_sm"
+                android:text="@string/settings_simulated_typing_speed_label"
+                android:textSize="@dimen/text_body"
+                android:textColor="@color/text_secondary"
+                android:paddingBottom="@dimen/spacing_sm" />
+
+            <Spinner
+                android:id="@+id/spinner_simulated_typing_speed"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_field"
+                android:spinnerMode="dropdown" />
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

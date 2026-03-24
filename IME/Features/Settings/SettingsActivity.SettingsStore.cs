@@ -216,6 +216,22 @@ namespace IME.Features.Settings
             editor.PutBoolean(KeyT9Enabled, enabled);
             editor.Apply();
         }
+        public static int GetSimulatedTypingSpeedMs(Context context)
+        {
+            int value = GetPrefs(context).GetInt(KeySimulatedTypingSpeedMs, DefaultSimulatedTypingSpeedMs);
+            if (value < 12)
+            {
+                return 12;
+            }
+
+            if (value > 400)
+            {
+                return 400;
+            }
+
+            return value;
+        }
+
         public static string GetSimulatedTypingText(Context context)
         {
             return GetPrefs(context).GetString(KeySimulatedTypingText, string.Empty) ?? string.Empty;

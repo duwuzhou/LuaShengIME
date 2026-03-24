@@ -388,6 +388,27 @@ namespace IME.Features.Input
             _simulatedTypingService.StartTyping(text, sendAfterCommit);
         }
 
+        internal void SendCurrentInput()
+        {
+            var inputConnection = CurrentInputConnection;
+            if (inputConnection == null)
+            {
+                return;
+            }
+
+            inputConnection.FinishComposingText();
+            if (inputConnection.PerformEditorAction(ImeAction.Send))
+            {
+                return;
+            }
+
+            long now = Java.Lang.JavaSystem.CurrentTimeMillis();
+            var downEvent = new KeyEvent(now, now, KeyEventActions.Down, Android.Views.Keycode.Enter, 0);
+            var upEvent = new KeyEvent(now, now, KeyEventActions.Up, Android.Views.Keycode.Enter, 0);
+            inputConnection.SendKeyEvent(downEvent);
+            inputConnection.SendKeyEvent(upEvent);
+        }
+
         internal bool PerformClipboardAction(ClipboardActionType action)
         {
             try

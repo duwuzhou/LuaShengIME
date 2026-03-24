@@ -1,8 +1,11 @@
-﻿using Android.OS;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Android.OS;
 using Android.Util;
-using Android.Views;
-using Android.Views.InputMethods;
 using IME.Features.Keyboard;
+using IME.Features.Settings;
 using IME.Shared.Abstractions;
 
 namespace IME.Features.Input.Simulation;
@@ -10,8 +13,6 @@ namespace IME.Features.Input.Simulation;
 internal sealed class SimulatedTypingService : IDisposable
 {
     private const string Tag = "SimulatedTyping";
-    private const int KeyDelayMs = 48;
-    private const int CandidateDelayMs = 96;
     private const int MaxPageSearchCount = 12;
 
     private readonly Ime _imeService;
@@ -46,87 +47,65 @@ internal sealed class SimulatedTypingService : IDisposable
             return;
         }
 
+        int keyDelayMs = SettingsActivity.GetSimulatedTypingSpeedMs(_imeService);
+        int candidateDelayMs = Math.Max(48, keyDelayMs * 2);
+        List<(string Text, bool ShouldSendAfter)> segments = BuildSegments(text, sendAfterCommit);
+        if (segments.Count == 0)
+        {
+            return;
+        }
+
         try
         {
             PinyinReverseLookup lookup = await GetLookupAsync().ConfigureAwait(false);
-            IReadOnlyList<PinyinLookupToken> tokens = lookup.Tokenize(text);
-
-            for (int i = 0; i < tokens.Count; i++)
+            for (int segmentIndex = 0; segmentIndex < segments.Count; segmentIndex++)
             {
-                if (!IsCurrentRequest(requestVersion))
-                {
-                    return;
-                }
-
-                PinyinLookupToken token = tokens[i];
-                if (string.IsNullOrEmpty(token.Text))
-                {
-                    continue;
-                }
-
-                bool committedByPinyin = false;
-                if (!string.IsNullOrEmpty(token.Pinyin))
-                {
-                    committedByPinyin = await TryCommitByPinyinAsync(requestVersion, token.Text, token.Pinyin!).ConfigureAwait(false);
-                }
-
-                if (!committedByPinyin)
-                {
-                    await CommitRawAsync(requestVersion, token.Text).ConfigureAwait(false);
-                }
-            }
-
-            if (sendAfterCommit && IsCurrentRequest(requestVersion))
-            {
-                await DelayAsync(CandidateDelayMs).ConfigureAwait(false);
-                await RunOnMainThreadAsync(() =>
+                IReadOnlyList<PinyinLookupToken> tokens = lookup.Tokenize(segments[segmentIndex].Text);
+                for (int i = 0; i < tokens.Count; i++)
                 {
                     if (!IsCurrentRequest(requestVersion))
                     {
                         return;
                     }
 
-                    var inputConnection = _imeService.CurrentInputConnection;
-                    if (inputConnection == null)
+                    PinyinLookupToken token = tokens[i];
+                    if (string.IsNullOrEmpty(token.Text))
                     {
-                        return;
+                        continue;
                     }
 
-                    inputConnection.FinishComposingText();
-                    if (inputConnection.PerformEditorAction(ImeAction.Send))
+                    bool committedByPinyin = false;
+                    if (!string.IsNullOrEmpty(token.Pinyin))
                     {
-                        return;
+                        committedByPinyin = await TryCommitByPinyinAsync(requestVersion, token.Text, token.Pinyin!, keyDelayMs, candidateDelayMs).ConfigureAwait(false);
                     }
 
-                    long now = Java.Lang.JavaSystem.CurrentTimeMillis();
-                    var downEvent = new KeyEvent(now, now, KeyEventActions.Down, Keycode.Enter, 0);
-                    var upEvent = new KeyEvent(now, now, KeyEventActions.Up, Keycode.Enter, 0);
-                    inputConnection.SendKeyEvent(downEvent);
-                    inputConnection.SendKeyEvent(upEvent);
-                }).ConfigureAwait(false);
+                    if (!committedByPinyin)
+                    {
+                        await CommitRawAsync(requestVersion, token.Text, keyDelayMs).ConfigureAwait(false);
+                    }
+                }
+
+                if (segments[segmentIndex].ShouldSendAfter && IsCurrentRequest(requestVersion))
+                {
+                    await DelayAsync(candidateDelayMs).ConfigureAwait(false);
+                    await SendCurrentInputAsync(requestVersion).ConfigureAwait(false);
+                }
             }
         }
         catch (Exception ex)
         {
-            Log.Warn(Tag, $"Simulated typing failed, fallback to direct commit: {ex.Message}");
+            Log.Warn(Tag, $"Simulated typing failed, fallback to segmented commit: {ex.Message}");
             if (!IsCurrentRequest(requestVersion))
             {
                 return;
             }
 
-            await RunOnMainThreadAsync(() =>
-            {
-                if (!IsCurrentRequest(requestVersion))
-                {
-                    return;
-                }
-
-                _imeService.CommitText(text, false);
-            }).ConfigureAwait(false);
+            await FallbackCommitAsync(requestVersion, segments, keyDelayMs, candidateDelayMs).ConfigureAwait(false);
         }
     }
 
-    private async Task<bool> TryCommitByPinyinAsync(int requestVersion, string text, string pinyin)
+    private async Task<bool> TryCommitByPinyinAsync(int requestVersion, string text, string pinyin, int keyDelayMs, int candidateDelayMs)
     {
         bool canUsePinyin = false;
         await RunOnMainThreadAsync(() =>
@@ -171,7 +150,7 @@ internal sealed class SimulatedTypingService : IDisposable
                 keyboardHandler.UpdateChineseCandidates();
             }).ConfigureAwait(false);
 
-            await DelayAsync(KeyDelayMs).ConfigureAwait(false);
+            await DelayAsync(keyDelayMs).ConfigureAwait(false);
         }
 
         bool committed = false;
@@ -193,13 +172,13 @@ internal sealed class SimulatedTypingService : IDisposable
 
         if (committed)
         {
-            await DelayAsync(CandidateDelayMs).ConfigureAwait(false);
+            await DelayAsync(candidateDelayMs).ConfigureAwait(false);
         }
 
         return committed;
     }
 
-    private async Task CommitRawAsync(int requestVersion, string text)
+    private async Task CommitRawAsync(int requestVersion, string text, int keyDelayMs)
     {
         for (int i = 0; i < text.Length; i++)
         {
@@ -221,7 +200,25 @@ internal sealed class SimulatedTypingService : IDisposable
                 _imeService.CommitText(chunk, false);
             }).ConfigureAwait(false);
 
-            await DelayAsync(KeyDelayMs).ConfigureAwait(false);
+            await DelayAsync(keyDelayMs).ConfigureAwait(false);
+        }
+    }
+
+    private async Task FallbackCommitAsync(int requestVersion, IReadOnlyList<(string Text, bool ShouldSendAfter)> segments, int keyDelayMs, int candidateDelayMs)
+    {
+        for (int i = 0; i < segments.Count; i++)
+        {
+            if (!IsCurrentRequest(requestVersion))
+            {
+                return;
+            }
+
+            await CommitRawAsync(requestVersion, segments[i].Text, keyDelayMs).ConfigureAwait(false);
+            if (segments[i].ShouldSendAfter)
+            {
+                await DelayAsync(candidateDelayMs).ConfigureAwait(false);
+                await SendCurrentInputAsync(requestVersion).ConfigureAwait(false);
+            }
         }
     }
 
@@ -301,6 +298,54 @@ internal sealed class SimulatedTypingService : IDisposable
     private Task DelayAsync(int delayMs)
     {
         return Task.Delay(delayMs);
+    }
+
+    private Task SendCurrentInputAsync(int requestVersion)
+    {
+        return RunOnMainThreadAsync(() =>
+        {
+            if (!IsCurrentRequest(requestVersion))
+            {
+                return;
+            }
+
+            _imeService.SendCurrentInput();
+        });
+    }
+
+    private static List<(string Text, bool ShouldSendAfter)> BuildSegments(string text, bool sendAfterCommit)
+    {
+        List<(string Text, bool ShouldSendAfter)> segments = new();
+        string normalized = (text ?? string.Empty).Replace("\r\n", "\n").Replace('\r', '\n');
+        string[] rawSegments = normalized.Split('\n');
+
+        int lastNonEmptyIndex = -1;
+        for (int i = 0; i < rawSegments.Length; i++)
+        {
+            if (!string.IsNullOrWhiteSpace(rawSegments[i]))
+            {
+                lastNonEmptyIndex = i;
+            }
+        }
+
+        for (int i = 0; i < rawSegments.Length; i++)
+        {
+            string segmentText = rawSegments[i];
+            if (string.IsNullOrWhiteSpace(segmentText))
+            {
+                continue;
+            }
+
+            bool shouldSendAfter = i < rawSegments.Length - 1;
+            if (i == lastNonEmptyIndex && sendAfterCommit)
+            {
+                shouldSendAfter = true;
+            }
+
+            segments.Add((segmentText, shouldSendAfter));
+        }
+
+        return segments;
     }
 
     private Task RunOnMainThreadAsync(Action action)

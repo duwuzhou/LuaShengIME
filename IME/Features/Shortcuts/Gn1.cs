@@ -697,7 +697,64 @@ namespace IME.Features.Shortcuts
                 return;
             }
 
-            _imeService.CommitText(text, false);
+            List<(string Text, bool ShouldSendAfter)> segments = BuildSimulatedTypingSegments(text);
+            if (segments.Count == 0)
+            {
+                Toast.MakeText(Context, Resource.String.function_simulated_typing_empty, ToastLength.Short)?.Show();
+                return;
+            }
+
+            CommitSimulatedTypingRawSegments(segments, 0);
+        }
+
+        private void CommitSimulatedTypingRawSegments(IReadOnlyList<(string Text, bool ShouldSendAfter)> segments, int index)
+        {
+            if (_imeService == null || index < 0 || index >= segments.Count)
+            {
+                return;
+            }
+
+            var segment = segments[index];
+            _imeService.CommitText(segment.Text, false);
+
+            if (!segment.ShouldSendAfter)
+            {
+                return;
+            }
+
+            new Handler(Looper.MainLooper).PostDelayed(() =>
+            {
+                if (_imeService == null)
+                {
+                    return;
+                }
+
+                _imeService.SendCurrentInput();
+                if (index + 1 < segments.Count)
+                {
+                    new Handler(Looper.MainLooper).PostDelayed(() => CommitSimulatedTypingRawSegments(segments, index + 1), 80);
+                }
+            }, 50);
+        }
+
+        private static List<(string Text, bool ShouldSendAfter)> BuildSimulatedTypingSegments(string text)
+        {
+            List<(string Text, bool ShouldSendAfter)> segments = new();
+            string normalized = (text ?? string.Empty).Replace("\r\n", "\n").Replace('\r', '\n');
+            string[] rawSegments = normalized.Split('\n');
+
+            for (int i = 0; i < rawSegments.Length; i++)
+            {
+                string segmentText = rawSegments[i];
+                if (string.IsNullOrWhiteSpace(segmentText))
+                {
+                    continue;
+                }
+
+                segments.Add((segmentText, i < rawSegments.Length - 1));
+            }
+
+            return segments;
         }
 
         private void OpenSimulatedTypingSettings()

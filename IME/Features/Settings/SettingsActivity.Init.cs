@@ -36,6 +36,7 @@ namespace IME.Features.Settings
             _editTapFallbackMoveSlopDp = FindViewById<EditText>(Resource.Id.edit_tap_fallback_move_slop_dp);
             _btnResetTapFallback = FindViewById<Button>(Resource.Id.btn_reset_tap_fallback);
             _editSimulatedTypingText = FindViewById<EditText>(Resource.Id.edit_simulated_typing_text);
+            _spinnerSimulatedTypingSpeed = FindViewById<Spinner>(Resource.Id.spinner_simulated_typing_speed);
             _btnSaveSimulatedTypingText = FindViewById<Button>(Resource.Id.btn_save_simulated_typing_text);
             _btnClearSimulatedTypingText = FindViewById<Button>(Resource.Id.btn_clear_simulated_typing_text);
 
@@ -64,6 +65,10 @@ namespace IME.Features.Settings
             var enterActionAdapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleSpinnerItem, _enterActionDisplay);
             enterActionAdapter.SetDropDownViewResource(Android.Resource.Layout.SimpleSpinnerDropDownItem);
             _spinnerEnterAction.Adapter = enterActionAdapter;
+
+            var simulatedTypingSpeedAdapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleSpinnerItem, _simulatedTypingSpeedDisplay);
+            simulatedTypingSpeedAdapter.SetDropDownViewResource(Android.Resource.Layout.SimpleSpinnerDropDownItem);
+            _spinnerSimulatedTypingSpeed.Adapter = simulatedTypingSpeedAdapter;
         }
 
         private void InitializeLexiconServices()
@@ -155,6 +160,17 @@ namespace IME.Features.Settings
                 _editSimulatedTypingText.Text = simulatedTypingText;
             }
 
+            int savedSimulatedTypingSpeed = prefs.GetInt(KeySimulatedTypingSpeedMs, DefaultSimulatedTypingSpeedMs);
+            int simulatedTypingSpeedIndex = _simulatedTypingSpeedMs.IndexOf(savedSimulatedTypingSpeed);
+            if (simulatedTypingSpeedIndex < 0)
+            {
+                simulatedTypingSpeedIndex = _simulatedTypingSpeedMs.IndexOf(DefaultSimulatedTypingSpeedMs);
+            }
+
+            if (simulatedTypingSpeedIndex >= 0)
+            {
+                _spinnerSimulatedTypingSpeed.SetSelection(simulatedTypingSpeedIndex);
+            }
             UpdatePredictionRoundsEnabled();
         }
 

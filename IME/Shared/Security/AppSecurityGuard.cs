@@ -32,6 +32,10 @@ internal static class AppSecurityGuard
     private const string Tag = "AppSecurityGuard";
     private const string ExpectedPackageName = "com.hualuo.luanshenIME";
     private const string ExpectedSignatureSha256 = "DC4C39302EDD050B338C28DD4F1BB1A6BA23702191A885337AB03501F6C91B38";
+#if APP_SECURITY_COMPATIBILITY_MODE
+    private const string CompatibilityDebugSignatureSha256 = "9ADD3E3D35310353DED52B88A1B5393C3733FBF10618E9C362C80DD3FBC0E2A5";
+    private const string CompatibilityBuildSignatureSha256 = "52CE625C3D9B7E5BEA1550F2FABC741A9F6F0ECC85F3E523152CC01C87E168CE";
+#endif
 
     private static readonly string[] SuspiciousPackageNames =
     {
@@ -103,11 +107,37 @@ internal static class AppSecurityGuard
     private static void ValidateSignature(Context context, List<string> reasons)
     {
         string? signatureSha256 = GetInstalledSignatureSha256(context);
-        if (string.IsNullOrWhiteSpace(signatureSha256) ||
-            !string.Equals(signatureSha256, ExpectedSignatureSha256, StringComparison.OrdinalIgnoreCase))
+        if (!IsAllowedSignature(signatureSha256))
         {
             reasons.Add("检测到签名异常");
         }
+    }
+
+    private static bool IsAllowedSignature(string? signatureSha256)
+    {
+        if (string.IsNullOrWhiteSpace(signatureSha256))
+        {
+            return false;
+        }
+
+        if (string.Equals(signatureSha256, ExpectedSignatureSha256, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+#if APP_SECURITY_COMPATIBILITY_MODE
+        if (string.Equals(signatureSha256, CompatibilityDebugSignatureSha256, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (string.Equals(signatureSha256, CompatibilityBuildSignatureSha256, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+#endif
+
+        return false;
     }
 
     private static void ValidateDebugger(Context context, List<string> reasons)

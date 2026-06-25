@@ -3,3 +3,6 @@ obj/
 *.user
 .vs/
 .git_bak/
+.idea/
+nul
+IME/Assets/enc/

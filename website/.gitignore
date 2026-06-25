@@ -1,0 +1,15 @@
+﻿node_modules/
+.nuxt/
+.output/
+dist/
+
+.env
+.env.local
+.env.*.local
+
+.codex-dev.log
+.codex-dev.err.log
+.codex-index.tmp
+.claude/
+public/uploads/releases/*
+!public/uploads/releases/.gitkeep

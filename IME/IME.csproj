@@ -21,6 +21,9 @@
         <TrimMode>partial</TrimMode>
         <RunObfuscator>false</RunObfuscator>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(AppSecurityCompatibilityMode)' == 'true'">
+        <DefineConstants>$(DefineConstants);APP_SECURITY_COMPATIBILITY_MODE</DefineConstants>
+    </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
         <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
         <AndroidFastDeploymentType>None</AndroidFastDeploymentType>
